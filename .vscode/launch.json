@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run game",
+      "preLaunchTask": "exec",
+      "program": "--version"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run game (build)",
+      "preLaunchTask": "run",
+      "program": "--version"
+    },
+    {
+      "type": "ghc",
+      "request": "launch",
+      "name": "Debug game",
+      "internalConsoleOptions": "openOnSessionStart",
+      "workspace": "${workspaceFolder}",
+      "startup": "${workspaceFolder}/app/Main.hs",
+      "startupFunc": "",
+      "startupArgs": "",
+      "stopOnEntry": false,
+      "mainArgs": "",
+      "ghciPrompt": "H>>= ",
+      "ghciInitialPrompt": "> ",
+      "ghciCmd": "stack ghci --no-load --no-build",
+      "ghciEnv": {},
+      "logFile": "${workspaceFolder}/.vscode/phoityne.log",
+      "logLevel": "WARNING",
+      "forceInspect": false
+    }
+  ]
+}

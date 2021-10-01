@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "presentation": {
+    "reveal": "silent",
+    "revealProblems": "onProblem",
+    "clear": true,
+    // "close": true
+  },
+  "tasks": [
+    {
+      // F7
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "label": "haskell build",
+      "type": "shell",
+      "command": "stack build"
+    },
+    {
+      // F6
+      "group": "build",
+      "type": "shell",
+      "label": "haskell clean & build",
+      "command": "stack clean && stack build"
+    },
+    {
+      "type": "shell",
+      "label": "exec",
+      "command": "stack exec uu-infofp-game-exe"
+    },
+    {
+      "type": "shell",
+      "label": "run",
+      "command": "stack run"
+    }
+  ]
+}

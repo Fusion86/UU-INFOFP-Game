@@ -1,2 +1,6 @@
 .stack-work/
 *~
+
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json

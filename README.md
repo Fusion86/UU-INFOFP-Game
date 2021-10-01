@@ -6,6 +6,16 @@
 # Setup stack
 stack setup
 
-# Run the game
+# Install hlint
+stack install hlint
+
+# Build and run the game
 stack run
+
+# Automatically build game when source changes
+stack exec uu-infofp-game
 ```
+
+## Todo
+
+- Maybe use ghcid instead of stack build (for speed)
