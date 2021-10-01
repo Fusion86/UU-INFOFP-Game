@@ -27,7 +27,7 @@
     {
       "type": "shell",
       "label": "exec",
-      "command": "stack exec uu-infofp-game-exe"
+      "command": "stack exec UU-INFOFP-Game-exe"
     },
     {
       "type": "shell",

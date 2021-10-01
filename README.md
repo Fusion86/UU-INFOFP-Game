@@ -3,6 +3,9 @@
 ## Setup development environment
 
 ```sh
+# Install dependencies (Ubuntu)
+sudo apt-get install freeglut3
+
 # Setup stack
 stack setup
 
