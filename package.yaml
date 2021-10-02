@@ -23,8 +23,12 @@ dependencies:
   - directory
   - containers
   - filepath
+  - text
+  - sdl2
+  - sdl2-ttf
   - gloss
   - gloss-juicy
+  - gloss-sdl2-surface
 
 library:
   source-dirs: src

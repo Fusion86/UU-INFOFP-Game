@@ -2,6 +2,7 @@ module Model where
 
 import Data.Map
 import Graphics.Gloss
+import SDL.Font (Font)
 
 type Assets = Map String Picture
 
@@ -11,5 +12,6 @@ data Scene = Intro {displayTimer :: Float} | Test | MainMenu | Gameplay
 
 data World = World
   { assets :: Assets,
-    scene :: Scene
+    scene :: Scene,
+    font :: Font
   }

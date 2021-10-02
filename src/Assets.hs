@@ -19,14 +19,14 @@ getAbsDirectoryContents :: FilePath -> IO [FilePath]
 getAbsDirectoryContents dir =
   getDirectoryContents dir >>= mapM (canonicalizePath . (dir </>))
 
-loadAssets :: IO Assets
-loadAssets = do
-  files <- getAbsDirectoryContents "assets"
+loadAssets :: FilePath -> IO Assets
+loadAssets f = do
+  files <- getAbsDirectoryContents f
   assetsMaybe <- mapM loadAsset (filter isAssetFile files)
   let assets = fromList (catMaybes assetsMaybe)
-  return (trace ("Loaded assets:" ++ show assets) assets)
+  return (trace ("Loaded assets: " ++ show assets) assets)
   where
-    isAssetFile = isSuffixOf "png"
+    isAssetFile f = isSuffixOf "png" f
 
 loadAsset :: FilePath -> IO (Maybe (String, Picture))
 loadAsset f = fmap (takeBaseName f,) <$> loadJuicyPNG f -- tomsmeding
@@ -41,4 +41,4 @@ loadAsset f = fmap (takeBaseName f,) <$> loadJuicyPNG f -- tomsmeding
 getAsset :: String -> Assets -> Picture
 getAsset s a = case lookup s a of
   Just p -> p
-  Nothing -> renderString 0.25 red "!TEX"
+  Nothing -> renderDbgString 0.25 red "!TEX"
