@@ -2,7 +2,8 @@
 
 module Assets where
 
-import Data.Map
+import Data.List (isSuffixOf)
+import Data.Map (fromList, lookup)
 import Data.Maybe (catMaybes)
 import Debug.Trace
 import Graphics.Gloss
@@ -21,9 +22,11 @@ getAbsDirectoryContents dir =
 loadAssets :: IO Assets
 loadAssets = do
   files <- getAbsDirectoryContents "assets"
-  assetsMaybe <- mapM loadAsset files
+  assetsMaybe <- mapM loadAsset (filter isAssetFile files)
   let assets = fromList (catMaybes assetsMaybe)
   return (trace ("Loaded assets:" ++ show assets) assets)
+  where
+    isAssetFile = isSuffixOf "png"
 
 loadAsset :: FilePath -> IO (Maybe (String, Picture))
 loadAsset f = fmap (takeBaseName f,) <$> loadJuicyPNG f -- tomsmeding
