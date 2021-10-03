@@ -19,7 +19,7 @@ initMainMenu = MainMenu 0 0
 updateWorld :: Float -> World -> IO World
 updateWorld d w = return $ w {scene = updateScene d w (scene w)}
 
--- TODO: Use enums instead of numbers
+-- | How many items there are in the main menu. Magic number.
 mainMenuItemCount :: Int
 mainMenuItemCount = 3
 
@@ -37,9 +37,13 @@ updateScene d w s@(MainMenu lastInput selectedItem)
   -- Enter key -> go to selected menu item
   | isKeyDown w (SpecialKey KeyEnter) =
     case selectedItem of
-      -- TODO: Use enums
-      1 -> s
-      -- Unimplemented menus.
+      -- Start game
+      0 -> s
+      -- Test
+      1 -> Test
+      -- Quit game
+      2 -> s
+      -- Unimplemented menus
       _ -> s
   -- Up key
   | canInput && isKeyDown w (SpecialKey KeyUp) = s {lastInput = 0, selectedItem = wrapAround (selectedItem - 1)}
@@ -53,6 +57,7 @@ updateScene d w s@(MainMenu lastInput selectedItem)
       | x < 0 = mainMenuItemCount - 1
       | x >= mainMenuItemCount = 0
       | otherwise = x
+updateScene d w s@Test = s
 updateScene _ _ s = s -- Default, do nothing.
 
 renderWorldScaled :: World -> IO Picture

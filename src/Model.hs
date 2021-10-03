@@ -2,6 +2,7 @@ module Model where
 
 import Data.Map (Map)
 import Data.Set (Set)
+import GHC.Enum (Enum)
 import Graphics.Gloss (Picture)
 import Graphics.Gloss.Interface.IO.Interact (Key)
 import SDL.Font (Font)
