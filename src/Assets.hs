@@ -26,7 +26,7 @@ loadAssets f = do
   let assets = fromList (catMaybes assetsMaybe)
   return (trace ("Loaded assets: " ++ show assets) assets)
   where
-    isAssetFile f = isSuffixOf "png" f
+    isAssetFile = isSuffixOf "png"
 
 loadAsset :: FilePath -> IO (Maybe (String, Picture))
 loadAsset f = fmap (takeBaseName f,) <$> loadJuicyPNG f -- tomsmeding

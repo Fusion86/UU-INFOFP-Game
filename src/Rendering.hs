@@ -13,6 +13,7 @@ renderDbgString size clr str =
    in scale x x $ color clr $ text str
 
 -- | Render a string with given font and color. The origin is the middle of the string.
+-- | Does not cache, and maybe it leaks memory idk.
 renderString :: Font -> Color -> String -> IO Picture
 renderString f c str = do
   surface <- solid f (colorCvt c) (pack str)

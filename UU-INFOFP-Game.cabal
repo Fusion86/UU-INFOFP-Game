@@ -25,10 +25,10 @@ library
   exposed-modules:
       Assets
       Colors
-      Controller
+      Coordinates
+      Input
       Model
       Rendering
-      Space
       World
   other-modules:
       Paths_UU_INFOFP_Game
