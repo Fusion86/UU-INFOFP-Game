@@ -13,13 +13,13 @@ data Player = Player {}
 
 data Scene
   = Intro {displayTimer :: Float}
-  | Test
   | MainMenu
       { -- | Time since last input.
         lastInput :: Float,
         -- | Index of the selected menu item.
         selectedItem :: Int
       }
+  | LevelViewer
   | Gameplay
 
 data World = World
@@ -28,4 +28,18 @@ data World = World
     scene :: Scene,
     keys :: Set Key,
     pointer :: (Float, Float)
+  }
+
+data Level = Level
+  { levelName :: String,
+    -- | List of tile IDs, where 0 is no tile.
+    tileLayer :: [Int],
+    levelObjects :: [LevelObject]
+  }
+
+data LevelObject = LevelObject
+  { levelObjectName :: String,
+    levelObjectPosition :: (Int, Int), -- Or floats idk
+    levelObjectSize :: (Int, Int),
+    levelObjectProperties :: Map String String
   }

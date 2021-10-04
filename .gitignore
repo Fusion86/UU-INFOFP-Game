@@ -6,3 +6,5 @@
 .vscode/*
 !.vscode/tasks.json
 !.vscode/launch.json
+
+*.tiled-session

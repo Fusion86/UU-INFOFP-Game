@@ -6,8 +6,10 @@ import Data.Map (empty)
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game (playIO)
 import Input
+import Levels
 import Rendering
 import SDL.Font (initialize, load)
+import System.FilePath (joinPath)
 import World
 
 createWindow :: Display
@@ -17,7 +19,8 @@ createWindow =
 
 main :: IO ()
 main = do
-  assets <- loadAssets "assets"
+  assets <- loadAssets $ joinPath ["assets", "images"]
+  -- levels <- loadLevels $ joinPath ["assets", "levels"]
 
   -- Text init and load font
   initialize

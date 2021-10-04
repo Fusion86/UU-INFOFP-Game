@@ -40,7 +40,7 @@ updateScene d w s@(MainMenu lastInput selectedItem)
       -- Start game
       0 -> s
       -- Test
-      1 -> Test
+      1 -> LevelViewer
       -- Quit game
       2 -> s
       -- Unimplemented menus
@@ -57,7 +57,9 @@ updateScene d w s@(MainMenu lastInput selectedItem)
       | x < 0 = mainMenuItemCount - 1
       | x >= mainMenuItemCount = 0
       | otherwise = x
-updateScene d w s@Test = s
+updateScene d w s@LevelViewer
+  | isKeyDown w (SpecialKey KeyEsc) = initMainMenu
+  | otherwise = s
 updateScene _ _ s = s -- Default, do nothing.
 
 renderWorldScaled :: World -> IO Picture
@@ -69,8 +71,29 @@ renderWorldScaled w = do
 renderWorld :: World -> IO Picture
 renderWorld (World a f s _ _) = do
   case s of
-    Intro _ -> return $ getAsset "intro" a
-    Test ->
+    Intro _ -> return $ getAsset "Intro" a
+    MainMenu _ selectedItem -> do
+      -- TODO: Maybe use caching?
+      gameTxt <- renderString f red "Game"
+      subTxt <- renderString f white "UU-INFOFP"
+      startTxt <- renderString f (getColor 0) "Start"
+      levelViewerTxt <- renderString f (getColor 1) "Level Viewer"
+      quitTxt <- renderString f (getColor 2) "Quit"
+      return $
+        pictures
+          [ getAsset "MainMenuBg" a,
+            setPos 120 60 $ scale 4 4 gameTxt,
+            setPos 128 48 subTxt,
+            setPos 120 94 startTxt,
+            setPos 120 106 levelViewerTxt,
+            setPos 120 118 quitTxt
+          ]
+      where
+        getColor :: Int -> Color
+        getColor itemIdx
+          | selectedItem == itemIdx = red
+          | otherwise = violet
+    LevelViewer ->
       return $
         pictures
           [ translate (-110) (-70) (renderDbgString 0.25 green "-110,-70"),
@@ -79,24 +102,4 @@ renderWorld (World a f s _ _) = do
             translate 90 (-70) (renderDbgString 0.25 green "90,-70"),
             translate 90 70 (renderDbgString 0.25 green "90,70")
           ]
-    MainMenu _ selectedItem -> do
-      -- TODO: Maybe use caching?
-      gameTxt <- renderString f red "Game"
-      subTxt <- renderString f white "UU-INFOFP"
-      startTxt <- renderString f (getColor 0) "Start"
-      testTxt <- renderString f (getColor 1) "Test"
-      quitTxt <- renderString f (getColor 2) "Quit"
-      return $
-        pictures
-          [ setPos 120 60 $ scale 4 4 gameTxt,
-            setPos 128 48 subTxt,
-            setPos 120 94 startTxt,
-            setPos 120 106 testTxt,
-            setPos 120 118 quitTxt
-          ]
-      where
-        getColor :: Int -> Color
-        getColor itemIdx
-          | selectedItem == itemIdx = red
-          | otherwise = violet
     Gameplay -> return $ renderDbgString 1 red "Not implemented"
