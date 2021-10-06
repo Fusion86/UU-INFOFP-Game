@@ -10,14 +10,17 @@ import Model
 import Rendering
 import SDL.Font (Font)
 
-initWorld :: Assets -> Font -> World
-initWorld a f = World a f (Intro 2.5) empty (0, 0)
+initWorld :: World
+initWorld = World (Intro 2.5) empty (0, 0) initPlayer
+
+initPlayer :: Player
+initPlayer = Player 100 100 0
 
 initMainMenu :: Scene
 initMainMenu = MainMenu 0 0
 
-updateWorld :: Float -> World -> IO World
-updateWorld d w = return $ w {scene = updateScene d w (scene w)}
+initChapterSelect :: Scene
+initChapterSelect = ChapterSelect 0
 
 -- | How many items there are in the main menu. Magic number.
 mainMenuItemCount :: Int
@@ -26,6 +29,9 @@ mainMenuItemCount = 3
 -- | Delay between each item scroll in seconds. 0 = no delay.
 menuStepDelay :: Float
 menuStepDelay = 0.2
+
+updateWorld :: Float -> World -> IO World
+updateWorld d w = return $ w {scene = updateScene d w (scene w)}
 
 updateScene :: Float -> World -> Scene -> Scene
 updateScene d w (Intro dt)
@@ -39,8 +45,8 @@ updateScene d w s@(MainMenu lastInput selectedItem)
     case selectedItem of
       -- Start game
       0 -> s
-      -- Test
-      1 -> LevelViewer
+      -- Level Viewer
+      1 -> initChapterSelect
       -- Quit game
       2 -> s
       -- Unimplemented menus
@@ -57,19 +63,19 @@ updateScene d w s@(MainMenu lastInput selectedItem)
       | x < 0 = mainMenuItemCount - 1
       | x >= mainMenuItemCount = 0
       | otherwise = x
-updateScene d w s@LevelViewer
-  | isKeyDown w (SpecialKey KeyEsc) = initMainMenu
+updateScene d w s@(ChapterSelect selectedItem)
+  | isKeyDown w (SpecialKey KeyEsc) = initMainMenu -- Go back to main menu
   | otherwise = s
 updateScene _ _ s = s -- Default, do nothing.
 
-renderWorldScaled :: World -> IO Picture
-renderWorldScaled w = do
-  world <- renderWorld w
+renderWorldScaled :: Assets -> Font -> World -> IO Picture
+renderWorldScaled a f w = do
+  world <- renderWorld a f w
   return $ scale worldScale worldScale world
 
 -- TODO: Split this up into multiple functions.
-renderWorld :: World -> IO Picture
-renderWorld (World a f s _ _) = do
+renderWorld :: Assets -> Font -> World -> IO Picture
+renderWorld a f (World s _ pt pl) = do
   case s of
     Intro _ -> return $ getAsset "Intro" a
     MainMenu _ selectedItem -> do
@@ -77,7 +83,7 @@ renderWorld (World a f s _ _) = do
       gameTxt <- renderString f red "Game"
       subTxt <- renderString f white "UU-INFOFP"
       startTxt <- renderString f (getColor 0) "Start"
-      levelViewerTxt <- renderString f (getColor 1) "Level Viewer"
+      chapterSelectTxt <- renderString f (getColor 1) "Chapter Select"
       quitTxt <- renderString f (getColor 2) "Quit"
       return $
         pictures
@@ -85,7 +91,7 @@ renderWorld (World a f s _ _) = do
             setPos 120 60 $ scale 4 4 gameTxt,
             setPos 128 48 subTxt,
             setPos 120 94 startTxt,
-            setPos 120 106 levelViewerTxt,
+            setPos 120 106 chapterSelectTxt,
             setPos 120 118 quitTxt
           ]
       where
@@ -93,7 +99,7 @@ renderWorld (World a f s _ _) = do
         getColor itemIdx
           | selectedItem == itemIdx = red
           | otherwise = violet
-    LevelViewer ->
+    ChapterSelect selectedItem ->
       return $
         pictures
           [ translate (-110) (-70) (renderDbgString 0.25 green "-110,-70"),
@@ -102,4 +108,4 @@ renderWorld (World a f s _ _) = do
             translate 90 (-70) (renderDbgString 0.25 green "90,-70"),
             translate 90 70 (renderDbgString 0.25 green "90,70")
           ]
-    Gameplay -> return $ renderDbgString 1 red "Not implemented"
+    Gameplay level -> return $ renderDbgString 1 red "Not implemented"

@@ -20,19 +20,17 @@ createWindow =
 main :: IO ()
 main = do
   assets <- loadAssets $ joinPath ["assets", "images"]
-  -- levels <- loadLevels $ joinPath ["assets", "levels"]
+  levels <- loadLevels $ joinPath ["assets", "levels"]
 
   -- Text init and load font
   initialize
   font <- load "assets/PressStart2P.ttf" 8
 
-  let world = initWorld assets font
-
   playIO
     createWindow -- Display mode.
     black -- Background color.
     60 -- Number of simulation steps to take for each second of real time.
-    world -- The initial World.
-    renderWorldScaled -- An action to convert the World a picture.
+    initWorld -- The initial World.
+    (renderWorldScaled assets font) -- An action to convert the World a picture.
     handleInput -- A function to handle input events.
     updateWorld -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.

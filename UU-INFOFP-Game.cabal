@@ -30,6 +30,7 @@ library
       Levels
       Model
       Rendering
+      Utility
       World
   other-modules:
       Paths_UU_INFOFP_Game
@@ -37,6 +38,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , filepath
@@ -46,6 +48,7 @@ library
     , sdl2
     , sdl2-ttf
     , text
+    , xeno
   default-language: Haskell2010
 
 executable UU-INFOFP-Game-exe
@@ -58,6 +61,7 @@ executable UU-INFOFP-Game-exe
   build-depends:
       UU-INFOFP-Game
     , base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , filepath
@@ -67,6 +71,7 @@ executable UU-INFOFP-Game-exe
     , sdl2
     , sdl2-ttf
     , text
+    , xeno
   default-language: Haskell2010
 
 test-suite UU-INFOFP-Game-test
@@ -80,6 +85,7 @@ test-suite UU-INFOFP-Game-test
   build-depends:
       UU-INFOFP-Game
     , base >=4.7 && <5
+    , bytestring
     , containers
     , directory
     , filepath
@@ -89,4 +95,5 @@ test-suite UU-INFOFP-Game-test
     , sdl2
     , sdl2-ttf
     , text
+    , xeno
   default-language: Haskell2010

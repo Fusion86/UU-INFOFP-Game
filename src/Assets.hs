@@ -10,14 +10,9 @@ import Graphics.Gloss
 import Graphics.Gloss.Juicy
 import Model
 import Rendering
-import System.Directory (canonicalizePath, getDirectoryContents)
-import System.FilePath (joinPath, takeBaseName, (</>))
+import System.FilePath (takeBaseName)
+import Utility
 import Prelude hiding (lookup)
-
--- Taken from https://stackoverflow.com/a/8572250
-getAbsDirectoryContents :: FilePath -> IO [FilePath]
-getAbsDirectoryContents dir =
-  getDirectoryContents dir >>= mapM (canonicalizePath . (dir </>))
 
 loadAssets :: FilePath -> IO Assets
 loadAssets f = do

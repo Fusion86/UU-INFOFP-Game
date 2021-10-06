@@ -24,11 +24,13 @@ dependencies:
   - containers
   - filepath
   - text
+  - bytestring
   - sdl2
   - sdl2-ttf
   - gloss
   - gloss-juicy
   - gloss-sdl2-surface
+  - xeno
 
 library:
   source-dirs: src

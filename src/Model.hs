@@ -9,7 +9,11 @@ import SDL.Font (Font)
 
 type Assets = Map String Picture
 
-data Player = Player {}
+data Player = Player
+  { health :: Int,
+    maxHealth :: Int,
+    completedLevels :: Int
+  }
 
 data Scene
   = Intro {displayTimer :: Float}
@@ -19,15 +23,19 @@ data Scene
         -- | Index of the selected menu item.
         selectedItem :: Int
       }
-  | LevelViewer
+  | ChapterSelect
+      { -- | Index of the selected menu item.
+        selectedItem :: Int
+      }
   | Gameplay
+      { level :: Maybe LevelObject
+      }
 
 data World = World
-  { assets :: Assets,
-    font :: Font,
-    scene :: Scene,
+  { scene :: Scene,
     keys :: Set Key,
-    pointer :: (Float, Float)
+    pointer :: (Float, Float),
+    player :: Player
   }
 
 data Level = Level
@@ -43,3 +51,6 @@ data LevelObject = LevelObject
     levelObjectSize :: (Int, Int),
     levelObjectProperties :: Map String String
   }
+
+instance Show Level where
+  show l = "todo"
