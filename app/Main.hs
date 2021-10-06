@@ -7,6 +7,7 @@ import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game (playIO)
 import Input
 import Levels
+import Model
 import Rendering
 import SDL.Font (initialize, load)
 import System.FilePath (joinPath)
