@@ -24,8 +24,6 @@ data Scene
       { -- | Menu type.
         menuType :: MenuType,
         parentMenu :: Maybe Scene,
-        -- | Time since last input.
-        lastInput :: Float,
         -- | Index of the selected menu item.
         selectedItem :: Int
       }
@@ -76,7 +74,7 @@ initPlayer :: Player
 initPlayer = Player 100 100 empty
 
 createMenu :: MenuType -> Maybe Scene -> Scene
-createMenu m p = MenuScene m p 0 0
+createMenu m p = MenuScene m p 0
 
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing

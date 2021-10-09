@@ -34,10 +34,10 @@ updateScene _ d (World _ i _) (IntroScene dt)
   where
     newDisplayTimer = dt - d
 -- Menu Scenes
-updateScene l d w s@(MenuScene t _ _ _) = case t of
+updateScene l d w s@(MenuScene t _ _) = case t of
   -- Main Menu
   MainMenu ->
-    let (activatedItem, s) = updateMenuScene 3 w
+    let (activatedItem, s) = updateMenuScene 3 d w
      in case activatedItem of
           -- Start game
           0 -> s
@@ -49,41 +49,10 @@ updateScene l d w s@(MenuScene t _ _ _) = case t of
           _ -> s
   -- Level Select Menu
   LevelSelectMenu ->
-    let (activatedItem, s) = updateMenuScene (length l) w
+    let (activatedItem, s) = updateMenuScene (length l) d w
      in s
 -- Default, do nothing
 updateScene _ _ _ s = error "Not implemented"
-
--- updateScene _ d (World _ i _) s@(MenuScene MainMenu _ lastInput selectedItem)
---   -- Enter key -> go to selected menu item
---   | isKeyDown i (SpecialKey KeyEnter) =
---     case selectedItem of
---       -- Start game
---       0 -> s
---       -- Level Selector
---       1 -> createMenu LevelSelectMenu (Just s)
---       -- Quit game
---       2 -> s
---       -- Unimplemented menus
---       _ -> s
---   -- Up key
---   | canInput && isKeyDown i (SpecialKey KeyUp) = s {lastInput = 0, selectedItem = wrap (selectedItem - 1)}
---   -- Down key
---   | canInput && isKeyDown i (SpecialKey KeyDown) = s {lastInput = 0, selectedItem = wrap (selectedItem + 1)}
---   -- When no key is pressed
---   | otherwise = s {lastInput = lastInput + d}
---   where
---     canInput = lastInput > menuStepDelay
---     wrap = menuWrapAround 3
--- updateScene l d (World _ i _) s@(MenuScene LevelSelectMenu (Just p) lastInput selectedItem)
---   -- Go back to the main menu when the player presses Escape.
---   | isKeyDown i (SpecialKey KeyEsc) = p
---   | canInput && isKeyDown i (SpecialKey KeyUp) = s {lastInput = 0, selectedItem = wrap (selectedItem - 1)}
---   | canInput && isKeyDown i (SpecialKey KeyDown) = s {lastInput = 0, selectedItem = wrap (selectedItem + 1)}
---   | otherwise = s {lastInput = lastInput + d}
---   where
---     canInput = lastInput > menuStepDelay
---     wrap = menuWrapAround (length l)
 
 renderWorldScaled :: Assets -> Font -> [Level] -> World -> IO Picture
 renderWorldScaled a f l w = do
@@ -93,7 +62,7 @@ renderWorldScaled a f l w = do
 -- TODO: Split this up into multiple functions.
 renderWorld :: Assets -> Font -> [Level] -> World -> IO Picture
 renderWorld a f _ (World IntroScene {} _ pl) = return $ getAsset a "Intro"
-renderWorld a f _ (World (MenuScene MainMenu _ lastInput selectedItem) _ pl) = do
+renderWorld a f _ (World (MenuScene MainMenu _ selectedItem) _ pl) = do
   -- TODO: Maybe use caching?
   gameTxt <- renderString f red "Game"
   subTxt <- renderString f white "UU-INFOFP"
@@ -110,15 +79,20 @@ renderWorld a f _ (World (MenuScene MainMenu _ lastInput selectedItem) _ pl) = d
     getColor itemIdx
       | selectedItem == itemIdx = red
       | otherwise = violet
-renderWorld a f l (World (MenuScene LevelSelectMenu _ lastInput selectedItem) _ pl) = do
+renderWorld a f l (World (MenuScene LevelSelectMenu _ selectedItem) _ pl) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
   return $
     pictures
-      [ getAsset a "MainMenuBg",
+      [ renderLevel selectedLevel,
         setPos (120, 24) selectLevelTxt,
         renderList (120, 44) 12 levelTxts
       ]
+  where
+    selectedLevel = l !! selectedItem
 renderWorld _ f _ _ = do
   str <- renderString f red "Scene not implemented"
   return $ setPos (120, 80) str
+
+renderLevel :: Level -> Picture
+renderLevel l = renderDbgString red "TODO renderLevel"

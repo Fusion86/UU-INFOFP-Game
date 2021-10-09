@@ -8,9 +8,9 @@ import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSu
 import SDL.Font (Font, solid)
 import SDL.Vect (V4 (..))
 
-renderDbgString :: Float -> Color -> String -> Picture
-renderDbgString size clr str =
-  let x = size * 0.1
+renderDbgString :: Color -> String -> Picture
+renderDbgString clr str =
+  let x = 0.1
    in scale x x $ color clr $ text str
 
 -- | Render a string with given font and color. The origin is the middle of the string.

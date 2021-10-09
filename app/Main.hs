@@ -10,7 +10,8 @@ import Levels
 import Model
 import Rendering
 import SDL.Font (initialize, load)
-import System.FilePath (joinPath)
+import System.FilePath (joinPath, (</>))
+import TileSet
 import World
 
 createWindow :: Display
@@ -20,12 +21,13 @@ createWindow =
 
 main :: IO ()
 main = do
-  assets <- loadAssets $ joinPath ["assets", "images"]
-  levels <- loadLevels $ joinPath ["assets", "levels"]
+  assets <- loadAssets $ "assets" </> "images"
+  levels <- loadLevels $ "assets" </> "levels"
+  tileSet <- loadTileSet $ "assets" </> "TileSet.png"
 
   -- Text init and load font
   initialize
-  font <- load "assets/PressStart2P.ttf" 8
+  font <- load ("assets" </> "PressStart2P.ttf") 8
 
   playIO
     createWindow -- Display mode.
