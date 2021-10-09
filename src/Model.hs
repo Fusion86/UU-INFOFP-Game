@@ -12,15 +12,15 @@ type Assets = Map String Picture
 data Player = Player
   { health :: Int,
     maxHealth :: Int,
-    -- | Set with the LevelNames of the completed levels.
+    -- | A Set with the LevelNames of the completed levels.
     completedLevels :: Set String
   }
 
 data MenuType = MainMenu | LevelSelectMenu
 
 data Scene
-  = Intro {displayTimer :: Float}
-  | Menu
+  = IntroScene {displayTimer :: Float}
+  | MenuScene
       { -- | Menu type.
         menuType :: MenuType,
         parentMenu :: Maybe Scene,
@@ -30,14 +30,26 @@ data Scene
         selectedItem :: Int
       }
   | Gameplay
-      { level :: Maybe LevelObject
+      { level :: Level
       }
 
 data World = World
   { scene :: Scene,
-    keys :: Set Key,
-    pointer :: (Float, Float),
+    input :: Input,
     player :: Player
+  }
+
+data InputEvent
+  = MenuDown
+  | MenuUp
+  | MenuEnter
+  | MenuBack
+  deriving (Show, Eq)
+
+data Input = Input
+  { keys :: Set Key,
+    events :: [InputEvent],
+    pointer :: (Float, Float)
   }
 
 data Level = Level
@@ -58,13 +70,13 @@ data LevelObject = LevelObject
   }
 
 initWorld :: World
-initWorld = World (Intro 2.5) empty (0, 0) initPlayer
+initWorld = World (IntroScene 2.5) (Input empty [] (0, 0)) initPlayer
 
 initPlayer :: Player
 initPlayer = Player 100 100 empty
 
 createMenu :: MenuType -> Maybe Scene -> Scene
-createMenu m p = Menu m p 0 0
+createMenu m p = MenuScene m p 0 0
 
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing

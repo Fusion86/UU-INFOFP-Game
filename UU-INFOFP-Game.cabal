@@ -25,9 +25,11 @@ library
   exposed-modules:
       Assets
       Colors
+      Common
       Coordinates
       Input
       Levels
+      Menu
       Model
       Rendering
       Utility

@@ -33,7 +33,7 @@ loadAsset f = fmap (takeBaseName f,) <$> loadJuicyPNG f -- tomsmeding
 --     Just picture -> return (Just (takeBaseName f, picture))
 --     Nothing -> return Nothing
 
-getAsset :: String -> Assets -> Picture
-getAsset s a = case lookup s a of
+getAsset :: Assets -> String -> Picture
+getAsset a s = case lookup s a of
   Just p -> p
   Nothing -> renderDbgString 0.25 red "!TEX"

@@ -32,6 +32,6 @@ main = do
     black -- Background color.
     60 -- Number of simulation steps to take for each second of real time.
     initWorld -- The initial World.
-    (renderWorldScaled assets font) -- An action to convert the World a picture.
+    (renderWorldScaled assets font levels) -- An action to convert the World a picture.
     handleInput -- A function to handle input events.
-    updateWorld -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
+    (updateWorld levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
