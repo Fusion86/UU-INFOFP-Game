@@ -9,6 +9,8 @@ import SDL.Font (Font)
 
 type Assets = Map String Picture
 
+type TileSet = Map Int Picture
+
 data Player = Player
   { health :: Int,
     maxHealth :: Int,
@@ -52,13 +54,12 @@ data Input = Input
 
 data Level = Level
   { levelName :: String,
+    levelBackground :: String,
     -- | List of tile IDs, where 0 is no tile.
     tileLayer :: [Int],
     levelObjects :: [LevelObject]
   }
-
-instance Show Level where
-  show = show . levelName
+  deriving (Show)
 
 data LevelObject = LevelObject
   { levelObjectName :: String,
@@ -66,6 +67,7 @@ data LevelObject = LevelObject
     levelObjectSize :: (Int, Int),
     levelObjectProperties :: Map String String
   }
+  deriving (Show)
 
 initWorld :: World
 initWorld = World (IntroScene 2.5) (Input empty [] (0, 0)) initPlayer

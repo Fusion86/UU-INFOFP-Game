@@ -2,6 +2,7 @@
 
 module Assets where
 
+import Common
 import Data.List (isSuffixOf)
 import Data.Map (fromList, lookup)
 import Data.Maybe (catMaybes)
@@ -9,7 +10,6 @@ import Debug.Trace
 import Graphics.Gloss
 import Graphics.Gloss.Juicy
 import Model
-import Rendering
 import System.FilePath (takeBaseName)
 import Utility
 import Prelude hiding (lookup)

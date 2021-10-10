@@ -25,12 +25,15 @@ dependencies:
   - filepath
   - text
   - bytestring
+  - pretty-simple
   - sdl2
   - sdl2-ttf
   - gloss
   - gloss-juicy
   - gloss-sdl2-surface
-  - xeno
+  - JuicyPixels
+  - JuicyPixels-extra
+  - xml
 
 library:
   source-dirs: src
