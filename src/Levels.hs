@@ -4,6 +4,7 @@
 module Levels where
 
 import Common
+import Coordinates
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.List (sort)
@@ -35,8 +36,8 @@ loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
   | Just name <- levelName,
     Just background <- levelBackground =
-    let !eagerLayer = (fromMaybe [] $ safeHead layers)
-     in Just $ Level name background eagerLayer []
+    let !eagerLayers = layers
+     in Just $ Level name background eagerLayers []
   | otherwise = Nothing
   where
     contents = parseXML xml
@@ -91,3 +92,15 @@ loadLevelFromXml xml
         f x
           | Just name <- findAttr (simpleName "name") x = name == propName
           | otherwise = False
+
+-- Returns the index of the invalid layer, or Nothing
+validateLayers :: [[Int]] -> Maybe Int
+validateLayers = helper 0
+  where
+    expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
+
+    helper :: Int -> [[Int]] -> Maybe Int
+    helper _ [] = Nothing
+    helper i (x : xs)
+      | length x /= expectedTileCount = Just i
+      | otherwise = helper (i + 1) xs

@@ -17,8 +17,10 @@ data Player = Player
     -- | A Set with the LevelNames of the completed levels.
     completedLevels :: Set String
   }
+  deriving (Show)
 
 data MenuType = MainMenu | LevelSelectMenu
+  deriving (Show, Eq)
 
 data Scene
   = IntroScene {displayTimer :: Float}
@@ -32,12 +34,14 @@ data Scene
   | Gameplay
       { level :: Level
       }
+  deriving (Show)
 
 data World = World
   { scene :: Scene,
     input :: Input,
     player :: Player
   }
+  deriving (Show)
 
 data InputEvent
   = MenuDown
@@ -51,12 +55,13 @@ data Input = Input
     events :: [InputEvent],
     pointer :: (Float, Float)
   }
+  deriving (Show)
 
 data Level = Level
   { levelName :: String,
     levelBackground :: String,
     -- | List of tile IDs, where 0 is no tile.
-    tileLayer :: [Int],
+    tileLayer :: [[Int]],
     levelObjects :: [LevelObject]
   }
   deriving (Show)

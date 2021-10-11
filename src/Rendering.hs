@@ -8,6 +8,7 @@ import Data.Text (pack)
 import Data.Word (Word8)
 import Graphics.Gloss
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
+import Levels
 import Model
 import SDL.Font (Font, solid)
 import SDL.Vect (V4 (..))
@@ -33,7 +34,7 @@ renderWorldScaled a f t l w = do
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _ pl) = return $ getAsset a "Intro"
-renderWorld a f _ _ (World (MenuScene MainMenu _ selectedItem) _ pl) = do
+renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _ pl) = do
   -- TODO: Maybe use caching?
   gameTxt <- renderString f red "Game"
   subTxt <- renderString f white "UU-INFOFP"
@@ -43,21 +44,23 @@ renderWorld a f _ _ (World (MenuScene MainMenu _ selectedItem) _ pl) = do
       [ getAsset a "MainMenuBg",
         setPos (120, 60) $ scale 4 4 gameTxt,
         setPos (128, 48) subTxt,
-        renderList (120, 94) 12 menuTxts
+        renderList (120, 94) 12 menuTxts,
+        renderCursor a w
       ]
   where
     getColor :: Int -> Color
     getColor itemIdx
       | selectedItem == itemIdx = red
       | otherwise = violet
-renderWorld a f t l (World (MenuScene LevelSelectMenu _ selectedItem) _ pl) = do
+renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _ pl) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
   return $
     pictures
       [ renderLevel a t selectedLevel,
         setPos (120, 24) selectLevelTxt,
-        renderList (120, 44) 12 levelTxts
+        renderList (120, 44) 12 levelTxts,
+        renderCursor a w
       ]
   where
     selectedLevel = l !! selectedItem
@@ -103,15 +106,16 @@ renderList start spacing = pictures . helper start
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
 renderLevel :: Assets -> TileSet -> Level -> Picture
-renderLevel a tileSet (Level name background tiles objects)
-  | length tiles /= expectedTileCount =
-    pictures
-      [ setPos (10, 20) $ renderDbgString red "renderLevel: InvalidTileCount",
-        setPos (10, 34) $ renderDbgString red $ "expected: " ++ show expectedTileCount,
-        setPos (10, 48) $ renderDbgString red $ "actual: " ++ show (length tiles)
-      ]
+renderLevel a tileSet (Level name background layers objects)
+  | Just invalidLayer <- validateLayers layers =
+    let tiles = layers !! invalidLayer
+     in pictures
+          [ setPos (10, 20) $ renderDbgString red $ "renderLevel: InvalidTileCount on layer " ++ show invalidLayer,
+            setPos (10, 34) $ renderDbgString red $ "expected: " ++ show expectedTileCount,
+            setPos (10, 48) $ renderDbgString red $ "actual: " ++ show (length tiles)
+          ]
   -- TODO: Parallax scroll background based on player position
-  | otherwise = pictures $ getAsset a background : helper (4, 4) tiles
+  | otherwise = pictures $ getAsset a background : concatMap (helper (4, 4)) layers
   where
     expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
 
@@ -127,3 +131,6 @@ renderTile t 0 xy = setPos xy blank
 renderTile t i xy
   | Just p <- lookup i t = setPos xy p
   | otherwise = renderDbgString red ("!tile: " ++ show i)
+
+renderCursor :: Assets -> World -> Picture
+renderCursor a (World _ (Input _ _ p) _) = setPos p $ getAsset a "Cursor"
