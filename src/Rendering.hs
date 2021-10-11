@@ -42,8 +42,8 @@ renderWorldScaled a f t l w = do
   return $ scale worldScale worldScale world
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
-renderWorld a f _ _ (World IntroScene {} _ pl) = return $ getAsset a "Intro"
-renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _ pl) = do
+renderWorld a f _ _ (World IntroScene {} _) = return $ getAsset a "Intro"
+renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   -- TODO: Maybe use caching?
   gameTxt <- renderString f red "Game"
   subTxt <- renderString f white "UU-INFOFP"
@@ -51,25 +51,25 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _ pl) = do
   return $
     pictures
       [ getAsset a "MainMenuBg",
-        setPos (120, 60) $ scale 4 4 gameTxt,
-        setPos (128, 48) subTxt,
-        renderList (120, 94) 12 menuTxts,
-        renderCursor a w
+        setPos (240, 120) $ scale 4 4 gameTxt,
+        setPos (248, 96) subTxt,
+        renderList (240, 188) 12 menuTxts
       ]
   where
     getColor :: Int -> Color
     getColor itemIdx
       | selectedItem == itemIdx = red
       | otherwise = violet
-renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _ pl) = do
+renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
+  let (bg, fg) = renderLevel a t selectedLevel
   return $
     pictures
-      [ renderLevel a t selectedLevel,
-        setPos (120, 24) selectLevelTxt,
-        renderList (120, 44) 12 levelTxts,
-        renderCursor a w
+      [ bg,
+        fg,
+        setPos (240, 44) selectLevelTxt,
+        renderList (240, 88) 12 levelTxts
       ]
   where
     selectedLevel = l !! selectedItem
@@ -114,32 +114,50 @@ renderList start spacing = pictures . helper start
     helper _ [] = []
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
-renderLevel :: Assets -> TileSet -> Level -> Picture
+renderLevel :: Assets -> TileSet -> Level -> (Picture, Picture)
 renderLevel a tileSet (Level name background layers objects)
   | Just invalidLayer <- validateLayers layers =
-    let tiles = layers !! invalidLayer
-     in pictures
-          [ setPos (10, 20) $ renderDbgString red $ "renderLevel: InvalidTileCount on layer " ++ show invalidLayer,
-            setPos (10, 34) $ renderDbgString red $ "expected: " ++ show expectedTileCount,
-            setPos (10, 48) $ renderDbgString red $ "actual: " ++ show (length tiles)
-          ]
-  -- TODO: Parallax scroll background based on player position
-  | otherwise = pictures $ getAsset a background : concatMap (helper (4, 4)) layers
+    let layer = layers !! invalidLayer
+     in ( blank,
+          pictures
+            [ setPos (10, 20) $ renderDbgString red $ "renderLevel: InvalidTileCount on layer " ++ show invalidLayer,
+              setPos (10, 34) $ renderDbgString red $ "expected: " ++ show expectedTileCount,
+              setPos (10, 48) $ renderDbgString red $ "actual: " ++ show (length $ tiles layer)
+            ]
+        )
+  | otherwise = (renderedBackground, pictures [renderedSolidLayers, renderedForeground])
   where
     expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
+
+    -- TODO: Parallax scroll background image based on player position
+    bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
+    renderedBackground
+      | Just bgImage <- background = pictures $ getAsset a bgImage : rest
+      | otherwise = pictures rest
+      where
+        rest = concatMap (helper (4, 4) . tiles) bgLayers
+
+    solidLayers = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
+    renderedSolidLayers = pictures $ concatMap (helper (4, 4) . tiles) solidLayers
+
+    fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
+    renderedForeground = pictures $ concatMap (helper (4, 4) . tiles) fgLayers
 
     helper :: (Float, Float) -> [Int] -> [Picture]
     helper _ [] = []
     helper (x, y) lst@(tile : tiles)
       -- If end of row, go to next row.
       | x >= worldWidth = helper (4, y + 8) lst
-      | otherwise = renderTile tileSet tile (x, y) : helper (x + 8, y) tiles
+      -- Add rendered tile if we can
+      | Just tile <- renderTile tileSet tile (x, y) = tile : helper (x + 8, y) tiles
+      -- Skip if tile is a blank
+      | otherwise = helper (x + 8, y) tiles
 
-renderTile :: TileSet -> Int -> (Float, Float) -> Picture
-renderTile t 0 xy = setPos xy blank
+renderTile :: TileSet -> Int -> (Float, Float) -> Maybe Picture
+renderTile t 0 xy = Nothing
 renderTile t i xy
-  | Just p <- lookup i t = setPos xy p
-  | otherwise = renderDbgString red ("!tile: " ++ show i)
+  | Just p <- lookup i t = Just $ setPos xy p
+  | otherwise = Just $ renderDbgString red ("!tile: " ++ show i)
 
 renderCursor :: Assets -> World -> Picture
-renderCursor a (World _ (Input _ _ p) _) = setPos p $ getAsset a "Cursor"
+renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"

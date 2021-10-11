@@ -20,6 +20,10 @@ stack exec uu-infofp-game
 
 # Install stuff needed for debugging
 stack install haskell-dap ghci-dap haskell-debug-adapter
+
+# Show FPS counter in console
+sudo apt install xosd-bin
+LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe 
 ```
 
 ## Todo

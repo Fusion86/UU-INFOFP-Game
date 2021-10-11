@@ -3,13 +3,13 @@ module Coordinates where
 import Graphics.Gloss
 
 worldScale :: Float
-worldScale = 4
+worldScale = 3
 
 worldWidth :: Float
-worldWidth = 240
+worldWidth = 480
 
 worldHeight :: Float
-worldHeight = 160
+worldHeight = 320
 
 setPos :: (Float, Float) -> Picture -> Picture
 setPos (x, y) = translate (x - worldWidth / 2) (y * (-1) + worldHeight / 2)

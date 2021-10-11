@@ -14,7 +14,7 @@ menuWrapAround itemCount x
   | otherwise = x
 
 updateMenuScene :: Int -> Float -> World -> (Int, Scene)
-updateMenuScene itemCount delta w@(World s@(MenuScene t p selectedItem) i@(Input _ e _) _)
+updateMenuScene itemCount delta w@(World s@(MenuScene t p selectedItem) i@(Input _ e _))
   -- If Esc is pressed and we can go back one menu, then go back.
   | isKeyDown i (SpecialKey KeyEsc) && isJust p = (-1, fromMaybe s p)
   | otherwise =
@@ -27,4 +27,4 @@ updateMenuScene itemCount delta w@(World s@(MenuScene t p selectedItem) i@(Input
     newSelectedItem = menuWrapAround itemCount (selectedItem - menuUpCount + menuDownCount)
     newScene = s {selectedItem = newSelectedItem}
 -- Ignore anything that isn't a menu
-updateMenuScene _ _ w@(World s _ _) = (-1, s)
+updateMenuScene _ _ w@(World s _) = (-1, s)

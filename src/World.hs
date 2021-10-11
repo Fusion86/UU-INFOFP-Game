@@ -11,7 +11,7 @@ import Rendering
 import SDL.Font (Font)
 
 updateWorld :: [Level] -> Float -> World -> IO World
-updateWorld l d w@(World s i _) =
+updateWorld l d w@(World s i) =
   return $
     w
       { -- Update scene
@@ -22,7 +22,7 @@ updateWorld l d w@(World s i _) =
 
 updateScene :: [Level] -> Float -> World -> Scene -> Scene
 -- Intro Scene
-updateScene _ d (World _ i _) (IntroScene dt)
+updateScene _ d (World _ i) (IntroScene dt)
   -- Skip intro screen when any key is pressed.
   | not $ null (keys i) = initMainMenu
   -- Keep displaying intro screen while counting down.

@@ -19,10 +19,11 @@ import Utility
 loadLevels :: FilePath -> IO [Level]
 loadLevels f = do
   files <- getAbsDirectoryContents f
-  levels <- mapM loadLevel (sort files)
+  maybeLevels <- mapM loadLevel (sort files)
+  let levels = catMaybes maybeLevels
   return $
     trace ("Loaded " ++ show (length levels) ++ " levels.") $
-      catMaybes levels
+      levels
 
 loadLevel :: FilePath -> IO (Maybe Level)
 loadLevel f = do
@@ -33,10 +34,9 @@ loadLevel f = do
 
 loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
-  | Just name <- levelName,
-    Just background <- levelBackground =
+  | Just name <- levelName =
     let !eagerLayers = layers
-     in Just $ Level name background eagerLayers []
+     in Just $ Level name levelBackground eagerLayers []
   | otherwise = Nothing
   where
     contents = parseXML xml
@@ -58,15 +58,17 @@ loadLevelFromXml xml
     levelBackground :: Maybe String
     levelBackground = getPropValueByName mapProps "Background"
 
-    layers :: [[Int]]
+    layers :: [TileLayer]
     layers = case mapRoot of
       Nothing -> trace "No map root found." []
       Just x -> mapMaybe parseLayerData $ findElements (simpleName "layer") x
       where
+        parseLayerData :: Element -> Maybe TileLayer
         parseLayerData x
+          -- TODO: Differentiate between SolidTileLayer, BackgroundTileLayer, and ForegroundTileLayer
           | Just layerData <- findElement (simpleName "data") x =
             let tiles = parseTileStr (pack (strContent layerData))
-             in Just tiles
+             in Just $ TileLayer BackgroundTileLayer tiles
           | otherwise = trace "Layer has no data." Nothing
 
         parseTileStr :: Text -> [Int]
@@ -93,13 +95,13 @@ loadLevelFromXml xml
           | otherwise = False
 
 -- Returns the index of the invalid layer, or Nothing
-validateLayers :: [[Int]] -> Maybe Int
+validateLayers :: [TileLayer] -> Maybe Int
 validateLayers = helper 0
   where
     expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
 
-    helper :: Int -> [[Int]] -> Maybe Int
+    helper :: Int -> [TileLayer] -> Maybe Int
     helper _ [] = Nothing
     helper i (x : xs)
-      | length x /= expectedTileCount = Just i
+      | length (tiles x) /= expectedTileCount = Just i
       | otherwise = helper (i + 1) xs

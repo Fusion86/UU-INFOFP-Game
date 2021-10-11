@@ -9,13 +9,13 @@ import Graphics.Gloss.Interface.IO.Game
 import Model
 
 addKey :: Key -> World -> World
-addKey k w@(World _ i _) = w {input = i {keys = insert (dbg "keyDown" k) (keys i)}}
+addKey k w@(World _ i) = w {input = i {keys = insert (dbg "keyDown" k) (keys i)}}
 
 removeKey :: Key -> World -> World
-removeKey k w@(World _ i _) = w {input = i {keys = delete (dbg "keyUp" k) (keys i)}}
+removeKey k w@(World _ i) = w {input = i {keys = delete (dbg "keyUp" k) (keys i)}}
 
 addEvent :: InputEvent -> World -> World
-addEvent e w@(World _ i@(Input _ es _) _) = w {input = i {events = dbg "events" $ e : es}}
+addEvent e w@(World _ i@(Input _ es _)) = w {input = i {events = dbg "events" $ e : es}}
 
 isKeyDown :: Input -> Key -> Bool
 isKeyDown i k = member k (keys i)
@@ -34,7 +34,7 @@ handleInput (EventKey k Down _ _) w = return $ addKey k w
 -- Any button/key released
 handleInput (EventKey k Up _ _) w = return $ removeKey k w
 -- Mouse move event
-handleInput (EventMotion p) w@(World _ i _) =
+handleInput (EventMotion p) w@(World _ i) =
   return $ w {input = i {pointer = glossToWorld (worldWidth * worldScale, worldHeight * worldScale) p}}
 -- Default, ignore event
 handleInput e w = return w
