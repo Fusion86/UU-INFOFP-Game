@@ -1,31 +1,51 @@
 # UU-INFOFP-Game
 
-## Setup development environment
+## Setup development environment (Debian & friends)
 
 ```sh
-# Install dependencies (Ubuntu)
-sudo apt-get install freeglut3 libsdl2-ttf-dev   
+# Install dependencies
+sudo apt-get install freeglut3 libsdl2-ttf-dev
 
 # Setup stack
 stack setup
-
-# Install hlint
-stack install hlint
 
 # Build and run the game
 stack run
 
 # Automatically build game when source changes
-stack exec uu-infofp-game
+stack build --file-watch
+```
+
+## Setup development environment (Windows)
+
+```sh
+# Install dependencies
+stack exec -- pacman -Syu
+stack exec -- pacman -S mingw-w64-x86_64-pkg-config mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_ttf
+# Download and place them next to UU-INFOFP-Game-exe.exe
+# - https://www.libsdl.org/release/SDL2-devel-2.0.16-mingw.tar.gz
+# - https://www.libsdl.org/projects/SDL_ttf/release/SDL2_ttf-devel-2.0.15-mingw.tar.gz
+
+# Setup stack
+stack setup
+
+# Build and run the game
+stack run
+
+# Automatically build game when source changes
+stack build --file-watch
+```
+
+## Optional stuff
+
+```sh
+# Install hlint
+stack install hlint
 
 # Install stuff needed for debugging
 stack install haskell-dap ghci-dap haskell-debug-adapter
 
 # Show FPS counter in console
 sudo apt install xosd-bin
-LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe 
+LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
 ```
-
-## Todo
-
-- Maybe use ghcid instead of stack build (for speed)
