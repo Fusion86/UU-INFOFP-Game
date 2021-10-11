@@ -73,9 +73,27 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
       ]
   where
     selectedLevel = l !! selectedItem
+renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
+  let (bg, fg) = renderLevel a t (level levelInstance)
+  return $
+    pictures
+      [ bg,
+        -- render pickups
+        -- render enemies
+        renderPlayer a p,
+        fg
+      ]
+renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
+  pausedTxt <- renderString f white "Game Paused"
+  menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
+  return $
+    pictures
+      [ setPos (240, 96) pausedTxt,
+        renderList (240, 188) 12 menuTxts
+      ]
 renderWorld _ f _ _ _ = do
   str <- renderString f red "Scene not implemented"
-  return $ setPos (120, 80) str
+  return $ setPos (240, 160) str
 
 renderMenuItems :: Font -> Int -> [String] -> IO [Picture]
 renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
@@ -161,3 +179,6 @@ renderTile t i xy
 
 renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"
+
+renderPlayer :: Assets -> Player -> Picture
+renderPlayer a p = blank

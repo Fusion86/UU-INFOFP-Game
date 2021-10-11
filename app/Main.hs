@@ -6,7 +6,7 @@ import Assets
 import Coordinates
 import Data.Map (empty)
 import Graphics.Gloss
-import Graphics.Gloss.Interface.IO.Game (playIO)
+import Graphics.Gloss.Interface.IO.Game (Event, playIO)
 import Input
 import Levels
 import Model
@@ -38,5 +38,8 @@ main = do
     60 -- Number of simulation steps to take for each second of real time.
     initWorld -- The initial World.
     (renderWorldScaled assets font tileSet levels) -- An action to convert the World a picture.
-    handleInput -- A function to handle input events.
-    (updateWorld levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
+    handleInputIO -- A function to handle input events.
+    (updateWorldIO levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
+  where
+    handleInputIO e w = return $ handleInput e w
+    updateWorldIO l d w = return $ updateWorld l d w

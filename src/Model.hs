@@ -11,7 +11,17 @@ type Assets = Map String Picture
 
 type TileSet = Map Int Picture
 
-data WeaponType = AssaultRifle | RocketLauncher | Shotgun deriving (Show)
+data World = World
+  { scene :: Scene,
+    input :: Input
+  }
+  deriving (Show)
+
+data WeaponType
+  = AssaultRifle
+  | RocketLauncher
+  | Shotgun
+  deriving (Show)
 
 data Player = Player
   { -- | Current player health.
@@ -33,21 +43,19 @@ data Player = Player
 data MenuType = MainMenu | LevelSelectMenu | PauseMenu
   deriving (Show, Eq)
 
-data GameplayState = Paused | Playing | Dead deriving (Show)
-
 data Scene
   = IntroScene {displayTimer :: Float}
   | MenuScene
       { -- | Menu type.
         menuType :: MenuType,
-        parentMenu :: Maybe Scene,
+        parentScene :: Maybe Scene,
         -- | Index of the selected menu item.
         selectedItem :: Int
       }
   | Gameplay
-      { gameplayState :: GameplayState,
-        levelInstance :: LevelInstance,
-        player :: Player
+      { levelInstance :: LevelInstance,
+        player :: Player,
+        playTime :: Float
       }
   | EndOfLevelScene
   deriving (Show)
@@ -80,12 +88,6 @@ data PickupItem
   | DamageBoost
   | JumpHeightBoost
   | AmmoPickup WeaponType
-  deriving (Show)
-
-data World = World
-  { scene :: Scene,
-    input :: Input
-  }
   deriving (Show)
 
 data InputEvent
@@ -152,3 +154,12 @@ createMenu m p = MenuScene m p 0
 
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
+
+createLevelInstance :: Level -> LevelInstance
+createLevelInstance l = LevelInstance l [] []
+
+createGameplay :: Level -> Player -> Scene
+createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
+  where
+    -- Sets player position to the spawn position in the level.
+    newPlayer = p
