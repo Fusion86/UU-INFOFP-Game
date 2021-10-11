@@ -1,14 +1,10 @@
 module Menu where
 
 import Common
-import Coordinates
 import Data.Maybe (fromMaybe, isJust)
-import Debug.Trace (trace)
-import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game
 import Input
 import Model
-import Rendering
 import SDL.Font (Font)
 
 menuWrapAround :: Int -> Int -> Int

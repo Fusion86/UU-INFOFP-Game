@@ -4,9 +4,6 @@ import Assets
 import Common
 import Coordinates
 import Data.Set (empty, member)
-import Debug.Trace (trace)
-import Graphics.Gloss
-import Graphics.Gloss.Interface.IO.Game
 import Input
 import Menu
 import Model

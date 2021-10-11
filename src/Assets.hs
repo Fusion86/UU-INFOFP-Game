@@ -2,13 +2,13 @@
 
 module Assets where
 
+import Colors
 import Common
 import Data.List (isSuffixOf)
 import Data.Map (fromList, lookup)
 import Data.Maybe (catMaybes)
-import Debug.Trace
-import Graphics.Gloss
-import Graphics.Gloss.Juicy
+import Graphics.Gloss (Picture)
+import Graphics.Gloss.Juicy (loadJuicyPNG)
 import Model
 import System.FilePath (takeBaseName)
 import Utility

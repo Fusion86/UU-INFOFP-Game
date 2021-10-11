@@ -1,12 +1,21 @@
 module Rendering where
 
 import Assets
+import Colors
 import Common
 import Coordinates
 import Data.Map (lookup)
 import Data.Text (pack)
 import Data.Word (Word8)
 import Graphics.Gloss
+  ( Color,
+    Picture,
+    blank,
+    pictures,
+    rgbaOfColor,
+    scale,
+    violet,
+  )
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
 import Levels
 import Model

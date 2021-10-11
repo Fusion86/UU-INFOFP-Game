@@ -11,7 +11,6 @@ import Data.List (sort)
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Text (Text, pack, splitOn, unpack)
 import qualified Data.Text as T
-import Debug.Trace (trace)
 import Model
 import System.FilePath (takeBaseName)
 import Text.XML.Light
