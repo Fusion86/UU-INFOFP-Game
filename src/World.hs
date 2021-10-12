@@ -61,9 +61,9 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
             Just 1 -> initMainMenu
             -- Default
             _ -> s
+    -- End of level menu, should show score etc.
+    EndOfLevel -> s
 -- Gameplay
 updateScene _ d (World s@(Gameplay level player pt) (Input k ev p))
   | MenuBack `elem` ev = createMenu PauseMenu (Just s)
   | otherwise = s
--- Default, do nothing
-updateScene _ _ _ = error "Not implemented"

@@ -2,7 +2,6 @@ module Model where
 
 import Data.Map (Map, empty)
 import qualified Data.Set as S (Set, empty)
-import GHC.Enum (Enum)
 import Graphics.Gloss (Picture)
 import Graphics.Gloss.Interface.IO.Interact (Key)
 import SDL.Font (Font)
@@ -17,11 +16,45 @@ data World = World
   }
   deriving (Show)
 
-data WeaponType
-  = AssaultRifle
-  | RocketLauncher
-  | Shotgun
+data Scene
+  = IntroScene {displayTimer :: Float}
+  | MenuScene
+      { menuType :: MenuType,
+        -- | The parent scene, this is the Scene which will be show when the player presses Esc to go back.
+        -- E.g. to unpause the game or to go to a parent menu.
+        parentScene :: Maybe Scene,
+        -- | Index of the selected menu item. Has to be an Int because the range is not known at compile time.
+        selectedItem :: Int
+      }
+  | Gameplay
+      { -- | An instance of the level which is currently being played.
+        levelInstance :: LevelInstance,
+        -- | The current player. The player is not stored inside the LevelInstance because the player is supposed to carry over their upgrades, ammo, etc when moving between maps.
+        player :: Player,
+        -- | Play time in seconds.
+        playTime :: Float
+      }
   deriving (Show)
+
+data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel
+  deriving (Show, Eq)
+
+data Input = Input
+  { -- | A set of the keys currently being pressed.
+    keys :: S.Set Key,
+    -- | Input events. Each key press corresponds to one event, which also means that multiple key presses produce multiple events.
+    events :: [InputEvent],
+    -- | The location of the mouse pointer, normalized to our worldWidth and worldHeight.
+    pointer :: (Float, Float)
+  }
+  deriving (Show)
+
+data InputEvent
+  = MenuDown
+  | MenuUp
+  | MenuEnter
+  | MenuBack
+  deriving (Show, Eq)
 
 data Player = Player
   { -- | Current player health.
@@ -36,71 +69,29 @@ data Player = Player
     playerAmmo :: Map WeaponType Int,
     -- | Currently active weapon.
     playerSelectedWeapon :: WeaponType,
+    -- | The player's position within the current active level instance.
     playerPosition :: (Float, Float)
   }
   deriving (Show)
 
-data MenuType = MainMenu | LevelSelectMenu | PauseMenu
+data WeaponType
+  = AssaultRifle
+  | RocketLauncher
+  | Shotgun
   deriving (Show, Eq)
 
-data Scene
-  = IntroScene {displayTimer :: Float}
-  | MenuScene
-      { -- | Menu type.
-        menuType :: MenuType,
-        parentScene :: Maybe Scene,
-        -- | Index of the selected menu item.
-        selectedItem :: Int
-      }
-  | Gameplay
-      { levelInstance :: LevelInstance,
-        player :: Player,
-        playTime :: Float
-      }
-  | EndOfLevelScene
+data Level = Level
+  { levelName :: String,
+    levelBackground :: Maybe String,
+    layers :: [TileLayer],
+    levelObjects :: [LevelObject]
+  }
   deriving (Show)
 
 data LevelInstance = LevelInstance
   { level :: Level,
     enemies :: [EnemyInstance],
     pickupItems :: [PickupItemInstance]
-  }
-  deriving (Show)
-
-data EnemyType = Regular | Heavy | Fast deriving (Show)
-
-data EnemyInstance = EnemyInstance
-  { enemyType :: EnemyType,
-    enemyHealth :: Int,
-    enemyPosition :: (Float, Float)
-  }
-  deriving (Show)
-
-data PickupItemInstance = PickupItemInstance
-  { pickupItem :: PickupItem,
-    pickupPosition :: (Float, Float)
-  }
-  deriving (Show)
-
-data PickupItem
-  = HealthPotion
-  | MaxHealthBoost
-  | DamageBoost
-  | JumpHeightBoost
-  | AmmoPickup WeaponType
-  deriving (Show)
-
-data InputEvent
-  = MenuDown
-  | MenuUp
-  | MenuEnter
-  | MenuBack
-  deriving (Show, Eq)
-
-data Input = Input
-  { keys :: S.Set Key,
-    events :: [InputEvent],
-    pointer :: (Float, Float)
   }
   deriving (Show)
 
@@ -116,30 +107,48 @@ data TileLayer = TileLayer
   }
   deriving (Show)
 
-data Level = Level
-  { levelName :: String,
-    levelBackground :: Maybe String,
-    layers :: [TileLayer],
-    levelObjects :: [LevelObject]
+data EnemyInstance = EnemyInstance
+  { enemyType :: EnemyType,
+    enemyHealth :: Int,
+    enemyPosition :: (Float, Float)
   }
   deriving (Show)
 
-data PlayerSpawnZoneType = StartSpawn | EndSpawn deriving (Show)
+data EnemyType = Regular | Heavy | Fast deriving (Show)
 
+data PickupItemInstance = PickupItemInstance
+  { pickupItem :: PickupItem,
+    pickupPosition :: (Float, Float)
+  }
+  deriving (Show)
+
+data PickupItem
+  = HealthPotion
+  | MaxHealthBoost
+  | DamageBoost
+  | JumpHeightBoost
+  | AmmoPickup WeaponType
+  deriving (Show, Eq)
+
+-- Might not be the best name for it, but in our map editor the same name is used.
 data LevelObject
   = PlayerSpawn
-      { playerSpawnType :: PlayerSpawnZoneType,
+      { -- | The player will spawn/respawn in this zone.
         playerSpawnPosition :: (Float, Float)
       }
   | EnemySpawn
-      { enemySpawnZone :: (Float, Float, Float, Float)
+      { -- | Region in which an enemy spawns. In the endless mode the enemies will keep spawning in a random location within this zone.
+        enemySpawnZone :: (Float, Float, Float, Float),
+        enemySpawnType :: EnemyType
       }
   | LevelEnd
-      { levelEndZone :: (Float, Float, Float, Float),
+      { -- | The player has reached the end of the level when they enter this zone.
+        levelEndZone :: (Float, Float, Float, Float),
         levelEndNextLevel :: String
       }
   | DeathZone
-      {
+      { -- | The player dies when it goes inside this zone.
+        deathZone :: (Float, Float, Float, Float)
       }
   deriving (Show)
 
