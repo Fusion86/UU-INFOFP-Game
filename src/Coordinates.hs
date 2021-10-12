@@ -12,9 +12,9 @@ worldHeight :: Float
 worldHeight = 320
 
 setPos :: (Float, Float) -> Picture -> Picture
-setPos (x, y) = translate (x - worldWidth / 2) (y * (-1) + worldHeight / 2)
+setPos (x, y) = translate (x - worldWidth / 2) (worldHeight / 2 - y)
 
 glossToWorld :: (Float, Float) -> (Float, Float) -> (Float, Float)
 glossToWorld (mx, my) (x, y) =
   let scaleX = mx / worldWidth; scaleY = my / worldHeight
-   in ((x + mx / 2) / scaleX, (y * (-1) + my / 2) / scaleY)
+   in ((x + mx / 2) / scaleX, (my / 2 - y) / scaleY)
