@@ -46,6 +46,5 @@ stack install hlint
 stack install haskell-dap ghci-dap haskell-debug-adapter
 
 # Show FPS counter in console
-sudo apt install xosd-bin
 LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
 ```
