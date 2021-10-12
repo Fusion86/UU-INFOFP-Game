@@ -81,7 +81,8 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
         -- render pickups
         -- render enemies
         renderPlayer a p,
-        fg
+        fg,
+        renderCursor a w
       ]
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
   pausedTxt <- renderString f white "Game Paused"
