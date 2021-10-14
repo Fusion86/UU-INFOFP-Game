@@ -7,10 +7,10 @@ import Graphics.Gloss.Interface.IO.Game
 import Model
 
 addKey :: Key -> World -> World
-addKey k w@(World _ i) = w {input = i {keys = insert (dbg "keyDown" k) (keys i)}}
+addKey k w@(World _ i) = trace ("keyDown: " ++ show k) w {input = i {keys = insert k (keys i)}}
 
 removeKey :: Key -> World -> World
-removeKey k w@(World _ i) = w {input = i {keys = delete (dbg "keyUp" k) (keys i)}}
+removeKey k w@(World _ i) = trace ("keyUp: " ++ show k) w {input = i {keys = delete k (keys i)}}
 
 addEvent :: InputEvent -> World -> World
 addEvent e w@(World _ i@(Input _ ev _)) = w {input = i {events = dbg "events" $ e : ev}}

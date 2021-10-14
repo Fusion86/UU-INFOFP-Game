@@ -11,10 +11,12 @@ import Graphics.Gloss
   ( Color,
     Picture,
     blank,
+    color,
     pictures,
+    rectangleSolid,
     rgbaOfColor,
     scale,
-    violet,
+    violet, blue
   )
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
 import Levels
@@ -55,11 +57,6 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
         setPos (248, 96) subTxt,
         renderList (240, 188) 12 menuTxts
       ]
-  where
-    getColor :: Int -> Color
-    getColor itemIdx
-      | selectedItem == itemIdx = red
-      | otherwise = violet
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
@@ -182,4 +179,4 @@ renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"
 
 renderPlayer :: Assets -> Player -> Picture
-renderPlayer a p = blank
+renderPlayer a (Player _ _ _ _ _ _ (x, y)) = setPos (x, y) $ color blue $ rectangleSolid 34 24

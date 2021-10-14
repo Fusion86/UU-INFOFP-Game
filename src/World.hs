@@ -5,6 +5,7 @@ import Common
 import Coordinates
 import Data.Maybe (fromMaybe)
 import Data.Set (empty, member)
+import Graphics.Gloss.Interface.IO.Game
 import Input
 import Menu
 import Model
@@ -64,6 +65,17 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
     -- End of level menu, should show score etc.
     EndOfLevel -> s
 -- Gameplay
-updateScene _ d (World s@(Gameplay level player pt) (Input k ev p))
+updateScene _ d (World s@(Gameplay level player@(Player _ _ _ _ _ _ (x, y)) pt) i@(Input k ev p))
   | MenuBack `elem` ev = createMenu PauseMenu (Just s)
-  | otherwise = s
+  | otherwise = s {player = newPlayer}
+  where
+    newPlayer = player {playerPosition = (newPlayerX, newPlayerY)}
+
+    -- TODO: Write better code
+    forceLeft = if isKeyDown i (Char 'a') then -100 else 0
+    forceRight = if isKeyDown i (Char 'd') then 100 else 0
+    forceUp = if isKeyDown i (Char 'w') then -100 else 0 -- TODO: Check if player can jump
+    forceDown = if isKeyDown i (Char 's') then 100 else 0 -- TODO: Gravity
+    
+    newPlayerX = x + (forceLeft + forceRight) * d
+    newPlayerY = y + (forceUp + forceDown) * d
