@@ -65,17 +65,33 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
     -- End of level menu, should show score etc.
     EndOfLevel -> s
 -- Gameplay
-updateScene _ d (World s@(Gameplay level player@(Player _ _ _ _ _ _ (x, y)) pt) i@(Input k ev p))
-  | MenuBack `elem` ev = createMenu PauseMenu (Just s)
-  | otherwise = s {player = newPlayer}
-  where
-    newPlayer = player {playerPosition = (newPlayerX, newPlayerY)}
+updateScene
+  _
+  d
+  ( World
+      s@( Gameplay
+            (LevelInstance (Level _ _ layers _) _ _)
+            player@(Player _ _ _ _ _ _ (x, y))
+            pt
+          )
+      i@(Input k ev p)
+    )
+    | MenuBack `elem` ev = createMenu PauseMenu (Just s)
+    | otherwise = s {player = newPlayer, playTime = pt + d}
+    where
+      newPlayer = player {playerPosition = newPlayerPosition}
 
-    -- TODO: Write better code
-    forceLeft = if isKeyDown i (Char 'a') then -100 else 0
-    forceRight = if isKeyDown i (Char 'd') then 100 else 0
-    forceUp = if isKeyDown i (Char 'w') then -100 else 0 -- TODO: Check if player can jump
-    forceDown = if isKeyDown i (Char 's') then 100 else 0 -- TODO: Gravity
-    
-    newPlayerX = x + (forceLeft + forceRight) * d
-    newPlayerY = y + (forceUp + forceDown) * d
+      -- TODO: Write better code
+      forceLeft = if isKeyDown i (Char 'a') then -100 else 0
+      forceRight = if isKeyDown i (Char 'd') then 100 else 0
+      forceUp = if isKeyDown i (Char 'w') then -100 else 0 -- TODO: Check if player can jump
+      forceDown = if isKeyDown i (Char 's') then 100 else 0 -- TODO: Gravity
+      newPlayerX = x + (forceLeft + forceRight) * d
+      newPlayerY = y + (forceUp + forceDown) * d
+
+      newPlayerPosition = (newPlayerX, newPlayerY)
+
+      collisionLayer = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
+      collisionGrid
+        | Just x <- collisionLayer = tileGrid x
+        | otherwise = []

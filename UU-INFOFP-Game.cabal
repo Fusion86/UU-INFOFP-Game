@@ -24,6 +24,7 @@ source-repository head
 library
   exposed-modules:
       Assets
+      Collision
       Colors
       Common
       Coordinates

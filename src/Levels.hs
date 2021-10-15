@@ -28,9 +28,7 @@ loadLevels f = do
 loadLevel :: FilePath -> IO (Maybe Level)
 loadLevel f = do
   xml <- trace ("Loading level from " ++ f) BS.readFile f
-  -- Makes debugging easier
-  let !eager = dbg "loadLevelFromXml" $ loadLevelFromXml xml
-  return eager
+  return $ loadLevelFromXml xml
 
 loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
@@ -65,10 +63,10 @@ loadLevelFromXml xml
       where
         parseLayerData :: Element -> Maybe TileLayer
         parseLayerData x
-          -- TODO: Differentiate between SolidTileLayer, BackgroundTileLayer, and ForegroundTileLayer
-          | Just layerData <- findElement (simpleName "data") x =
+          | Just layerData <- findElement (simpleName "data") x,
+            Just layerName <- findAttr (simpleName "name") x =
             let tiles = parseTileStr (pack (strContent layerData))
-             in Just $ TileLayer BackgroundTileLayer tiles
+             in Just $ TileLayer (layerNameToType layerName) $ tilesToTileGrid tiles
           | otherwise = trace "Layer has no data." Nothing
 
         parseTileStr :: Text -> [Int]
@@ -81,11 +79,18 @@ loadLevelFromXml xml
           | c == '\n' = False
           | otherwise = True
 
+        layerNameToType :: String -> TileLayerType
+        layerNameToType x
+          | x == "Foreground" = ForegroundTileLayer
+          | x == "Solid" = SolidTileLayer
+          | x == "Background" = BackgroundTileLayer
+          | otherwise = trace ("Unknown layer type: " ++ x) BackgroundTileLayer
+
     getPropValueByName :: Maybe Element -> String -> Maybe String
     getPropValueByName propsElement propName
       | Just props <- propsElement,
-        Just nameProp <- filterChild f props,
-        Just value <- findAttr (simpleName "value") nameProp =
+        Just prop <- filterChild f props,
+        Just value <- findAttr (simpleName "value") prop =
         Just value
       | otherwise = Nothing
       where
@@ -94,14 +99,14 @@ loadLevelFromXml xml
           | Just name <- findAttr (simpleName "name") x = name == propName
           | otherwise = False
 
--- Returns the index of the invalid layer, or Nothing
-validateLayers :: [TileLayer] -> Maybe Int
-validateLayers = helper 0
+tilesToTileGrid :: [Int] -> TileGrid
+tilesToTileGrid = helper (0, 0)
   where
-    expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
-
-    helper :: Int -> [TileLayer] -> Maybe Int
-    helper _ [] = Nothing
-    helper i (x : xs)
-      | length (tiles x) /= expectedTileCount = Just i
-      | otherwise = helper (i + 1) xs
+    helper :: Vec2 -> [Int] -> TileGrid
+    helper _ [] = []
+    helper (x, y) lst@(tile : tiles)
+      -- If end of row, go to next row.
+      | x >= worldWidth = helper (0, y + 8) lst
+      -- If not a null tile
+      | tile /= 0 = ((x, y), tile) : helper (x + 8, y) tiles
+      | otherwise = helper (x + 8, y) tiles

@@ -37,3 +37,7 @@ getAsset :: Assets -> String -> Picture
 getAsset a s = case lookup s a of
   Just p -> p
   Nothing -> renderDbgString red "!TEX"
+
+-- loadCharacterSheets :: FilePath -> IO CharacterSheets
+-- loadCharacterSheet f = do
+--   img <- loadJuicyPNG f

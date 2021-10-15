@@ -3,6 +3,7 @@ module TileSet where
 import Codec.Picture (Image (imageHeight, imageWidth), PixelRGBA8, convertRGBA8, readImage)
 import Codec.Picture.Extra (crop)
 import Common
+import Coordinates
 import Data.Map (empty, fromList, insert)
 import Graphics.Gloss (Picture)
 import Graphics.Gloss.Juicy (fromImageRGBA8)

@@ -10,6 +10,8 @@ type Assets = Map String Picture
 
 type TileSet = Map Int Picture
 
+type Vec2 = (Float, Float)
+
 data World = World
   { scene :: Scene,
     input :: Input
@@ -45,7 +47,7 @@ data Input = Input
     -- | Input events. Each key press corresponds to one event, which also means that multiple key presses produce multiple events.
     events :: [InputEvent],
     -- | The location of the mouse pointer, normalized to our worldWidth and worldHeight.
-    pointer :: (Float, Float)
+    pointer :: Vec2
   }
   deriving (Show)
 
@@ -70,7 +72,7 @@ data Player = Player
     -- | Currently active weapon.
     playerSelectedWeapon :: WeaponType,
     -- | The player's position within the current active level instance.
-    playerPosition :: (Float, Float)
+    playerPosition :: Vec2
   }
   deriving (Show)
 
@@ -101,16 +103,18 @@ data TileLayerType
   | ForegroundTileLayer
   deriving (Show, Eq)
 
+type TileGrid = [(Vec2, Int)]
+
 data TileLayer = TileLayer
   { tileLayerType :: TileLayerType,
-    tiles :: [Int]
+    tileGrid :: TileGrid
   }
   deriving (Show)
 
 data EnemyInstance = EnemyInstance
   { enemyType :: EnemyType,
     enemyHealth :: Int,
-    enemyPosition :: (Float, Float)
+    enemyPosition :: Vec2
   }
   deriving (Show)
 
@@ -118,7 +122,7 @@ data EnemyType = Regular | Heavy | Fast deriving (Show)
 
 data PickupItemInstance = PickupItemInstance
   { pickupItem :: PickupItem,
-    pickupPosition :: (Float, Float)
+    pickupPosition :: Vec2
   }
   deriving (Show)
 
@@ -134,7 +138,7 @@ data PickupItem
 data LevelObject
   = PlayerSpawn
       { -- | The player will spawn/respawn in this zone.
-        playerSpawnPosition :: (Float, Float)
+        playerSpawnPosition :: Vec2
       }
   | EnemySpawn
       { -- | Region in which an enemy spawns. In the endless mode the enemies will keep spawning in a random location within this zone.
@@ -151,6 +155,12 @@ data LevelObject
         deathZone :: (Float, Float, Float, Float)
       }
   deriving (Show)
+
+type CharacterSheets = [CharacterSheet]
+
+data CharacterSheet
+  = PlayerCharacterSheet {}
+  | InfiltratorCharacterSheet {}
 
 initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))

@@ -11,12 +11,13 @@ import Graphics.Gloss
   ( Color,
     Picture,
     blank,
+    blue,
     color,
     pictures,
     rectangleSolid,
     rgbaOfColor,
     scale,
-    violet, blue
+    violet,
   )
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
 import Levels
@@ -60,10 +61,11 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
-  let (bg, fg) = renderLevel a t selectedLevel
+  let (bg, mg, fg) = renderLevel 0 a t selectedLevel
   return $
     pictures
       [ bg,
+        mg,
         fg,
         setPos (240, 44) selectLevelTxt,
         renderList (240, 88) 12 levelTxts
@@ -71,10 +73,11 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   where
     selectedLevel = l !! selectedItem
 renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
-  let (bg, fg) = renderLevel a t (level levelInstance)
+  let (bg, mg, fg) = renderLevel pt a t (level levelInstance)
   return $
     pictures
       [ bg,
+        mg,
         -- render pickups
         -- render enemies
         renderPlayer a p,
@@ -123,57 +126,65 @@ renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
 
 -- | Render a horizontal list starting at `start`.
 -- Each next element will be `spacing` px lower than the element before it.
-renderList :: (Float, Float) -> Float -> [Picture] -> Picture
+renderList :: Vec2 -> Float -> [Picture] -> Picture
 renderList start spacing = pictures . helper start
   where
-    helper :: (Float, Float) -> [Picture] -> [Picture]
+    helper :: Vec2 -> [Picture] -> [Picture]
     helper _ [] = []
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
-renderLevel :: Assets -> TileSet -> Level -> (Picture, Picture)
-renderLevel a tileSet (Level name background layers objects)
-  | Just invalidLayer <- validateLayers layers =
-    let layer = layers !! invalidLayer
-     in ( blank,
-          pictures
-            [ setPos (10, 20) $ renderDbgString red $ "renderLevel: InvalidTileCount on layer " ++ show invalidLayer,
-              setPos (10, 34) $ renderDbgString red $ "expected: " ++ show expectedTileCount,
-              setPos (10, 48) $ renderDbgString red $ "actual: " ++ show (length $ tiles layer)
-            ]
-        )
-  | otherwise = (renderedBackground, pictures [renderedSolidLayers, renderedForeground])
+renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture, Picture)
+renderLevel t a tileSet (Level name background layers objects) =
+  (renderedBackground, renderedSolidLayers, renderedForeground)
   where
-    expectedTileCount = round (worldWidth / 8 * worldHeight / 8)
-
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
       | Just bgImage <- background = pictures $ getAsset a bgImage : rest
       | otherwise = pictures rest
       where
-        rest = concatMap (helper (4, 4) . tiles) bgLayers
+        rest = concatMap renderLayer bgLayers
 
     solidLayers = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
-    renderedSolidLayers = pictures $ concatMap (helper (4, 4) . tiles) solidLayers
+    renderedSolidLayers = pictures $ concatMap renderLayer solidLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
-    renderedForeground = pictures $ concatMap (helper (4, 4) . tiles) fgLayers
+    renderedForeground = pictures $ concatMap renderLayer fgLayers
 
-    helper :: (Float, Float) -> [Int] -> [Picture]
-    helper _ [] = []
-    helper (x, y) lst@(tile : tiles)
-      -- If end of row, go to next row.
-      | x >= worldWidth = helper (4, y + 8) lst
-      -- Add rendered tile if we can
-      | Just tile <- renderTile tileSet tile (x, y) = tile : helper (x + 8, y) tiles
-      -- Skip if tile is a blank
-      | otherwise = helper (x + 8, y) tiles
+    renderLayer = renderTileGrid t tileSet . tileGrid
 
-renderTile :: TileSet -> Int -> (Float, Float) -> Maybe Picture
-renderTile t 0 xy = Nothing
-renderTile t i xy
-  | Just p <- lookup i t = Just $ setPos xy p
+renderTileGrid :: Float -> TileSet -> TileGrid -> [Picture]
+renderTileGrid t _ [] = []
+renderTileGrid t ts (((x, y), tile) : is)
+  | Just pic <- renderTile t ts tile (x + 4, y + 4) = pic : renderTileGrid t ts is
+  -- If tile can't be rendered (should never happen though)
+  | otherwise = trace ("Can't render tile: " ++ show tile) renderTileGrid t ts is
+
+renderTile :: Float -> TileSet -> Int -> Vec2 -> Maybe Picture
+renderTile _ ts 0 xy = Nothing
+renderTile t ts i xy
+  | Just p <- lookup (animateTile t i) ts = Just $ setPos xy p
   | otherwise = Just $ renderDbgString red ("!tile: " ++ show i)
+
+-- TODO: Rewrite this to use random animations, instead of time based.
+animateTile :: Float -> Int -> Int
+animateTile time i
+  -- Acid
+  | i == 673 && odd t = 674
+  | i == 674 && odd t = 673
+  -- Laser
+  | i == 457 && odd t = 459
+  | i == 458 && odd t = 460
+  | i == 501 && odd t = 503
+  | i == 502 && odd t = 504
+  | i == 545 && odd t = 547
+  | i == 546 && odd t = 548
+  | i == 589 && odd t = 591
+  | i == 590 && odd t = 592
+  -- Non animated tile
+  | otherwise = i
+  where
+    t = round time
 
 renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"
