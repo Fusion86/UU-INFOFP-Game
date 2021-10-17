@@ -1,5 +1,6 @@
 module Model where
 
+import Data.Cache (Cache)
 import Data.Map (Map, empty)
 import qualified Data.Set as S (Set, empty)
 import Graphics.Gloss (Picture)
@@ -11,6 +12,8 @@ type Assets = Map String Picture
 type TileSet = Map Int Picture
 
 type Vec2 = (Float, Float)
+
+type RenderCache = Cache String Picture
 
 data World = World
   { scene :: Scene,

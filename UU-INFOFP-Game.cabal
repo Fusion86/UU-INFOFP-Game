@@ -45,6 +45,7 @@ library
     , JuicyPixels-extra
     , base >=4.7 && <5
     , bytestring
+    , cache
     , containers
     , directory
     , filepath
@@ -71,6 +72,7 @@ executable UU-INFOFP-Game-exe
     , UU-INFOFP-Game
     , base >=4.7 && <5
     , bytestring
+    , cache
     , containers
     , directory
     , filepath
@@ -98,6 +100,7 @@ test-suite UU-INFOFP-Game-test
     , UU-INFOFP-Game
     , base >=4.7 && <5
     , bytestring
+    , cache
     , containers
     , directory
     , filepath

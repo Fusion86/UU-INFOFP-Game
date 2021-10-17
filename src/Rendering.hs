@@ -4,6 +4,7 @@ import Assets
 import Colors
 import Common
 import Coordinates
+import Data.Cache (fetchWithCache)
 import Data.Map (lookup)
 import Data.Text (pack)
 import Data.Word (Word8)
@@ -39,14 +40,14 @@ renderString f c str = do
       let (r, g, b, a) = rgbaOfColor c
        in V4 (floor $ r * 255) (floor $ g * 255) (floor $ b * 255) (floor $ a * 255)
 
-renderWorldScaled :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
-renderWorldScaled a f t l w = do
-  world <- renderWorld a f t l w
+renderWorldScaled :: RenderCache -> Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
+renderWorldScaled rc a f t l w = do
+  world <- renderWorld rc a f t l w
   return $ scale worldScale worldScale world
 
-renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
-renderWorld a f _ _ (World IntroScene {} _) = return $ getAsset a "Intro"
-renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
+renderWorld :: RenderCache -> Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
+renderWorld _ a f _ _ (World IntroScene {} _) = return $ getAsset a "Intro"
+renderWorld _ a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   -- TODO: Maybe use caching?
   gameTxt <- renderString f red "Game"
   subTxt <- renderString f white "UU-INFOFP"
@@ -58,10 +59,10 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
         setPos (248, 96) subTxt,
         renderList (240, 188) 12 menuTxts
       ]
-renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
+renderWorld rc a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
-  let (bg, mg, fg) = renderLevel 0 a t selectedLevel
+  (bg, mg, fg) <- renderLevel rc 0 a t selectedLevel
   return $
     pictures
       [ bg,
@@ -72,8 +73,8 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
       ]
   where
     selectedLevel = l !! selectedItem
-renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
-  let (bg, mg, fg) = renderLevel pt a t (level levelInstance)
+renderWorld rc a f t _ w@(World (Gameplay levelInstance p pt) _) = do
+  (bg, mg, fg) <- renderLevel rc pt a t (level levelInstance)
   return $
     pictures
       [ bg,
@@ -84,7 +85,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
         fg,
         renderCursor a w
       ]
-renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
+renderWorld _ _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
   pausedTxt <- renderString f white "Game Paused"
   menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
   return $
@@ -92,7 +93,7 @@ renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
       [ setPos (240, 96) pausedTxt,
         renderList (240, 188) 12 menuTxts
       ]
-renderWorld _ f _ _ _ = do
+renderWorld _ _ f _ _ _ = do
   str <- renderString f red "Scene not implemented"
   return $ setPos (240, 160) str
 
@@ -133,23 +134,31 @@ renderList start spacing = pictures . helper start
     helper _ [] = []
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
-renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture, Picture)
-renderLevel t a tileSet (Level name background layers objects) =
-  (renderedBackground, renderedSolidLayers, renderedForeground)
+renderLevel :: RenderCache -> Float -> Assets -> TileSet -> Level -> IO (Picture, Picture, Picture)
+renderLevel rc t a tileSet (Level name background layers objects) = do
+  bg <- cachedBackground
+  sl <- cachedSolids
+  fg <- cachedForeground
+  return (bg, sl, fg)
   where
+    cacheKey = name
+    cachedBackground = fetchWithCache rc (cacheKey ++ "_bg") (const renderedBackground)
+    cachedSolids = fetchWithCache rc (cacheKey ++ "_sl") (const renderedSolidLayers)
+    cachedForeground = fetchWithCache rc (cacheKey ++ "_fg") (const renderedForeground)
+
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
-      | Just bgImage <- background = pictures $ getAsset a bgImage : rest
-      | otherwise = pictures rest
+      | Just bgImage <- background = return $ pictures $ getAsset a bgImage : rest
+      | otherwise = return $ trace "renderBg" pictures rest
       where
         rest = concatMap renderLayer bgLayers
 
     solidLayers = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
-    renderedSolidLayers = pictures $ concatMap renderLayer solidLayers
+    renderedSolidLayers = return $ pictures $ concatMap renderLayer solidLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
-    renderedForeground = pictures $ concatMap renderLayer fgLayers
+    renderedForeground = return $ pictures $ concatMap renderLayer fgLayers
 
     renderLayer = renderTileGrid t tileSet . tileGrid
 

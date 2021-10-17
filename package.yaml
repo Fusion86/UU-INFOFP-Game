@@ -25,6 +25,7 @@ dependencies:
   - filepath
   - text
   - bytestring
+  - cache
   - pretty-simple
   - sdl2
   - sdl2-ttf

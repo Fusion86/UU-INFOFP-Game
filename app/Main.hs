@@ -4,6 +4,7 @@ module Main where
 
 import Assets
 import Coordinates
+import Data.Cache (newCache)
 import Data.Map (empty)
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Game (Event, playIO)
@@ -32,12 +33,15 @@ main = do
   initialize
   !font <- load ("assets" </> "PressStart2P.ttf") 8
 
+  -- Init render cache
+  !cache <- newCache Nothing :: IO RenderCache
+
   playIO
     createWindow -- Display mode.
     violet -- Background color.
     60 -- Number of simulation steps to take for each second of real time.
     initWorld -- The initial World.
-    (renderWorldScaled assets font tileSet levels) -- An action to convert the World a picture.
+    (renderWorldScaled cache assets font tileSet levels) -- An action to convert the World a picture.
     handleInputIO -- A function to handle input events.
     (updateWorldIO levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
   where
