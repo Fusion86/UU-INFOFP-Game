@@ -61,11 +61,10 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
-  let (bg, mg, fg) = renderLevel 0 a t selectedLevel
+  let (bg, fg) = renderLevel 0 a t selectedLevel
   return $
     pictures
       [ bg,
-        mg,
         fg,
         setPos (240, 44) selectLevelTxt,
         renderList (240, 88) 12 levelTxts
@@ -73,11 +72,10 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   where
     selectedLevel = l !! selectedItem
 renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
-  let (bg, mg, fg) = renderLevel pt a t (level levelInstance)
+  let (bg, fg) = renderLevel pt a t (level levelInstance)
   return $
     pictures
       [ bg,
-        mg,
         -- render pickups
         -- render enemies
         renderPlayer a p,
@@ -133,9 +131,9 @@ renderList start spacing = pictures . helper start
     helper _ [] = []
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
-renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture, Picture)
-renderLevel t a tileSet (Level name background layers objects) =
-  (renderedBackground, renderedSolidLayers, renderedForeground)
+renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
+renderLevel t a tileSet (Level name background foreground layers objects) =
+  (renderedBackground, renderedForeground)
   where
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
@@ -145,11 +143,12 @@ renderLevel t a tileSet (Level name background layers objects) =
       where
         rest = concatMap renderLayer bgLayers
 
-    solidLayers = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
-    renderedSolidLayers = pictures $ concatMap renderLayer solidLayers
-
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
-    renderedForeground = pictures $ concatMap renderLayer fgLayers
+    renderedForeground
+      | Just fgImage <- foreground = pictures $ getAsset a fgImage : rest
+      | otherwise = pictures rest
+      where
+        rest = concatMap renderLayer fgLayers
 
     renderLayer = renderTileGrid t tileSet . tileGrid
 

@@ -47,4 +47,8 @@ stack install haskell-dap ghci-dap haskell-debug-adapter
 
 # Show FPS counter in console
 LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
+
+# Profile the game performance
+# Make sure to exit the game from the main menu by navigating to Quit. Exiting from the console, or by closing the window does NOT work.
+stack --profile run --rts-options -p
 ```

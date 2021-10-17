@@ -8,3 +8,4 @@
 !.vscode/launch.json
 
 *.tiled-session
+*.prof

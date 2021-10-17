@@ -11,6 +11,8 @@ import Menu
 import Model
 import Rendering
 import SDL.Font (Font)
+import System.Exit (exitSuccess)
+import System.IO.Unsafe (unsafePerformIO)
 
 updateWorld :: [Level] -> Float -> World -> World
 updateWorld l d w@(World s i) =
@@ -43,7 +45,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
             -- Quit
-            Just 2 -> s
+            Just 2 -> unsafePerformIO exitSuccess
             -- Default
             _ -> s
     -- Level Select Menu
@@ -70,7 +72,7 @@ updateScene
   d
   ( World
       s@( Gameplay
-            (LevelInstance (Level _ _ layers _) _ _)
+            (LevelInstance (Level _ _ _ layers _) _ _)
             player@(Player _ _ _ _ _ _ (x, y))
             pt
           )
@@ -90,8 +92,3 @@ updateScene
       newPlayerY = y + (forceUp + forceDown) * d
 
       newPlayerPosition = (newPlayerX, newPlayerY)
-
-      collisionLayer = safeHead $ filter ((==) SolidTileLayer . tileLayerType) layers
-      collisionGrid
-        | Just x <- collisionLayer = tileGrid x
-        | otherwise = []

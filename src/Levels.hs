@@ -34,7 +34,7 @@ loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
   | Just name <- levelName =
     let !eagerLayers = layers
-     in Just $ Level name levelBackground eagerLayers []
+     in Just $ Level name levelBackground levelForeground eagerLayers [] 
   | otherwise = Nothing
   where
     contents = parseXML xml
@@ -56,6 +56,9 @@ loadLevelFromXml xml
     levelBackground :: Maybe String
     levelBackground = getPropValueByName mapProps "Background"
 
+    levelForeground :: Maybe String
+    levelForeground = getPropValueByName mapProps "Foreground"
+
     layers :: [TileLayer]
     layers = case mapRoot of
       Nothing -> trace "No map root found." []
@@ -64,9 +67,10 @@ loadLevelFromXml xml
         parseLayerData :: Element -> Maybe TileLayer
         parseLayerData x
           | Just layerData <- findElement (simpleName "data") x,
-            Just layerName <- findAttr (simpleName "name") x =
+            Just layerName <- findAttr (simpleName "name") x,
+            Just layerType <- layerNameToType layerName =
             let tiles = parseTileStr (pack (strContent layerData))
-             in Just $ TileLayer (layerNameToType layerName) $ tilesToTileGrid tiles
+             in Just $ TileLayer layerType $ tilesToTileGrid tiles
           | otherwise = trace "Layer has no data." Nothing
 
         parseTileStr :: Text -> [Int]
@@ -79,12 +83,11 @@ loadLevelFromXml xml
           | c == '\n' = False
           | otherwise = True
 
-        layerNameToType :: String -> TileLayerType
+        layerNameToType :: String -> Maybe TileLayerType
         layerNameToType x
-          | x == "Foreground" = ForegroundTileLayer
-          | x == "Solid" = SolidTileLayer
-          | x == "Background" = BackgroundTileLayer
-          | otherwise = trace ("Unknown layer type: " ++ x) BackgroundTileLayer
+          | x == "Foreground" = Just ForegroundTileLayer
+          | x == "Background" = Just BackgroundTileLayer
+          | otherwise = Nothing
 
     getPropValueByName :: Maybe Element -> String -> Maybe String
     getPropValueByName propsElement propName

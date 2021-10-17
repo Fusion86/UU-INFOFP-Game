@@ -85,6 +85,7 @@ data WeaponType
 data Level = Level
   { levelName :: String,
     levelBackground :: Maybe String,
+    levelForeground:: Maybe String,
     layers :: [TileLayer],
     levelObjects :: [LevelObject]
   }
@@ -97,11 +98,7 @@ data LevelInstance = LevelInstance
   }
   deriving (Show)
 
-data TileLayerType
-  = SolidTileLayer
-  | BackgroundTileLayer
-  | ForegroundTileLayer
-  deriving (Show, Eq)
+data TileLayerType = BackgroundTileLayer | ForegroundTileLayer deriving (Show, Eq)
 
 type TileGrid = [(Vec2, Int)]
 
