@@ -33,6 +33,7 @@ loadLevel f = do
 loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
   | Just name <- levelName =
+    -- We want eager evaluation to show all warnings for all levels (and not just when loading one level).
     let !eagerLayers = layers
         !eagerObjects = levelObjects
      in Just $ Level name levelBackground levelForeground eagerLayers eagerObjects

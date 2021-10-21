@@ -1,6 +1,7 @@
 module World (updateWorld) where
 
 import Assets
+import Collision
 import Common
 import Coordinates
 import Data.Maybe (fromMaybe)
@@ -117,18 +118,11 @@ updateScene
         -- If not a valid move, just return the old position.
         | otherwise = (x, y)
 
+      collisionObjects :: [LevelObject]
+      collisionObjects = filter ((==) "Collision" . objectName) levelObjects
+
       -- Returns true when the newPlayerPosition is a valid move.
       validMove :: Vec2 -> Vec2 -> Bool
       validMove pos@(x, y) size@(w, h)
         | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = False
         | otherwise = not $ any (intersects pos size) collisionObjects
-
-      intersects :: Vec2 -> Vec2 -> LevelObject -> Bool
-      intersects pos@(x1, y1) (w1, h1) (LevelObject _ (x2, y2) (w2, h2)) =
-        x1 < x2 + w2
-          && x1 + w1 > x2
-          && y1 < y2 + h2
-          && h1 + y1 > y2
-
-      collisionObjects :: [LevelObject]
-      collisionObjects = filter ((==) "Collision" . objectName) levelObjects
