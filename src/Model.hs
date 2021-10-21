@@ -85,7 +85,7 @@ data WeaponType
 data Level = Level
   { levelName :: String,
     levelBackground :: Maybe String,
-    levelForeground:: Maybe String,
+    levelForeground :: Maybe String,
     layers :: [TileLayer],
     levelObjects :: [LevelObject]
   }
@@ -132,25 +132,12 @@ data PickupItem
   deriving (Show, Eq)
 
 -- Might not be the best name for it, but in our map editor the same name is used.
-data LevelObject
-  = PlayerSpawn
-      { -- | The player will spawn/respawn in this zone.
-        playerSpawnPosition :: Vec2
-      }
-  | EnemySpawn
-      { -- | Region in which an enemy spawns. In the endless mode the enemies will keep spawning in a random location within this zone.
-        enemySpawnZone :: (Float, Float, Float, Float),
-        enemySpawnType :: EnemyType
-      }
-  | LevelEnd
-      { -- | The player has reached the end of the level when they enter this zone.
-        levelEndZone :: (Float, Float, Float, Float),
-        levelEndNextLevel :: String
-      }
-  | DeathZone
-      { -- | The player dies when it goes inside this zone.
-        deathZone :: (Float, Float, Float, Float)
-      }
+data LevelObject = LevelObject
+  { -- | The player will spawn/respawn in this zone.
+    objectName :: String,
+    objectPosition :: Vec2,
+    objectSize :: Vec2
+  }
   deriving (Show)
 
 type CharacterSheets = [CharacterSheet]
@@ -163,7 +150,7 @@ initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle (0, 0)
+initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100)
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0

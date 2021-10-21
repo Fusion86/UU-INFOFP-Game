@@ -189,4 +189,4 @@ renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"
 
 renderPlayer :: Assets -> Player -> Picture
-renderPlayer a (Player _ _ _ _ _ _ (x, y)) = setPos (x, y) $ color blue $ rectangleSolid 34 24
+renderPlayer a (Player _ _ _ _ _ _ (x, y)) = setPos (x, y) $ getAsset a "TempChar"
