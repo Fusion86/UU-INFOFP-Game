@@ -1,6 +1,7 @@
 module World (updateWorld) where
 
 import Assets
+import Collision
 import Common
 import Coordinates
 import Data.Maybe (fromMaybe)
@@ -72,7 +73,7 @@ updateScene
   d
   ( World
       s@( Gameplay
-            (LevelInstance (Level _ _ _ layers _) _ _)
+            (LevelInstance (Level _ _ _ layers levelObjects) _ _)
             player@(Player _ _ _ _ _ _ (x, y))
             pt
           )
@@ -82,13 +83,46 @@ updateScene
     | otherwise = s {player = newPlayer, playTime = pt + d}
     where
       newPlayer = player {playerPosition = newPlayerPosition}
+      playerSize = (16, 16)
 
       -- TODO: Write better code
       forceLeft = if isKeyDown i (Char 'a') then -100 else 0
       forceRight = if isKeyDown i (Char 'd') then 100 else 0
-      forceUp = if isKeyDown i (Char 'w') then -100 else 0 -- TODO: Check if player can jump
-      forceDown = if isKeyDown i (Char 's') then 100 else 0 -- TODO: Gravity
+      forceUp = if isKeyDown i (Char 'w') then -200 else 0 -- TODO: Check if player can jump
+      forceDown = if isKeyDown i (Char 's') then 200 else 100 -- TODO: Gravity
       newPlayerX = x + (forceLeft + forceRight) * d
       newPlayerY = y + (forceUp + forceDown) * d
+      newPlayerX' = x + (forceLeft + forceRight) * (d / 2)
+      newPlayerY' = y + (forceUp + forceDown) * (d / 2)
+      newPlayerY'' = y + (forceUp + forceDown) * (d / 4)
 
-      newPlayerPosition = (newPlayerX, newPlayerY)
+      newPlayerPosition
+        -- If the move is valid, return the new position.
+        | validMove (newPlayerX - 8, newPlayerY - 4) playerSize =
+          (newPlayerX, newPlayerY)
+        -- Half step - If the move is valid, return the new position.
+        | validMove (newPlayerX' - 8, newPlayerY' - 4) playerSize =
+          (newPlayerX', newPlayerY')
+        -- Half step - If the move is valid, return the new position.
+        | validMove (newPlayerX' - 8, newPlayerY'' - 4) playerSize =
+          (newPlayerX', newPlayerY'')
+        --
+        -- Only check collision on the X axis.
+        -- This is needed to allow the player to move when standing on the ground.
+        -- If the move is valid, return the new position.
+        | validMove (newPlayerX - 8, y - 4) playerSize =
+          (newPlayerX, y)
+        -- Half step - If the move is valid, return the new position.
+        | validMove (newPlayerX' - 8, y - 4) playerSize =
+          (newPlayerX', y)
+        -- If not a valid move, just return the old position.
+        | otherwise = (x, y)
+
+      collisionObjects :: [LevelObject]
+      collisionObjects = filter ((==) "Collision" . objectName) levelObjects
+
+      -- Returns true when the newPlayerPosition is a valid move.
+      validMove :: Vec2 -> Vec2 -> Bool
+      validMove pos@(x, y) size@(w, h)
+        | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = False
+        | otherwise = not $ any (intersects pos size) collisionObjects

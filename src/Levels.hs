@@ -33,8 +33,10 @@ loadLevel f = do
 loadLevelFromXml :: ByteString -> Maybe Level
 loadLevelFromXml xml
   | Just name <- levelName =
+    -- We want eager evaluation to show all warnings for all levels (and not just when loading one level).
     let !eagerLayers = layers
-     in Just $ Level name levelBackground levelForeground eagerLayers [] 
+        !eagerObjects = levelObjects
+     in Just $ Level name levelBackground levelForeground eagerLayers eagerObjects
   | otherwise = Nothing
   where
     contents = parseXML xml
@@ -49,6 +51,30 @@ loadLevelFromXml xml
       Just x -> case findElement (simpleName "properties") x of
         Nothing -> trace "No map properties found" Nothing
         Just props -> Just props
+
+    objectGroup :: Maybe Element
+    objectGroup = case mapRoot of
+      Nothing -> trace "No map root found." Nothing
+      Just x -> case findElement (simpleName "objectgroup") x of
+        Nothing -> trace "No objectgroup found" Nothing
+        Just y -> Just y
+
+    levelObjects :: [LevelObject]
+    levelObjects = case objectGroup of
+      Nothing -> trace "No objectGroup found." []
+      Just x -> mapMaybe parseLevelObject $ findElements (simpleName "object") x
+      where
+        parseLevelObject :: Element -> Maybe LevelObject
+        parseLevelObject x
+          | Just objectName <- findAttr (simpleName "name") x,
+            Just posX <- findAttr (simpleName "x") x,
+            Just posY <- findAttr (simpleName "y") x,
+            Just w <- findAttr (simpleName "width") x,
+            Just h <- findAttr (simpleName "height") x =
+            Just $ LevelObject objectName (readFloat posX, readFloat posY) (readFloat w, readFloat h)
+          | otherwise = Nothing
+          where
+            readFloat y = read y :: Float
 
     levelName :: Maybe String
     levelName = getPropValueByName mapProps "Name"
