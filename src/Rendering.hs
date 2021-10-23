@@ -45,7 +45,7 @@ renderWorldScaled a f t l w = do
   return $ scale worldScale worldScale world
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
-renderWorld a f _ _ (World IntroScene {} _) = return $ getAsset a "Intro"
+renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
 renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   -- TODO: Maybe use caching?
   gameTxt <- renderString f red "Game"
@@ -53,7 +53,7 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Quit"]
   return $
     pictures
-      [ getAsset a "MainMenuBg",
+      [ getImageAsset a "MainMenuBg",
         setPos (240, 120) $ scale 4 4 gameTxt,
         setPos (248, 96) subTxt,
         renderList (240, 188) 12 menuTxts
@@ -78,7 +78,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
       [ bg,
         -- render pickups
         -- render enemies
-        renderPlayer a p,
+        renderPlayer pt a w p,
         fg,
         renderCursor a w
       ]
@@ -132,42 +132,42 @@ renderList start spacing = pictures . helper start
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
 renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
-renderLevel t a tileSet (Level name background foreground layers objects) =
+renderLevel ft a tileSet (Level name background foreground layers objects) =
   (renderedBackground, renderedForeground)
   where
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
-      | Just bgImage <- background = pictures $ getAsset a bgImage : rest
+      | Just bgImage <- background = pictures $ getImageAsset a bgImage : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer bgLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
     renderedForeground
-      | Just fgImage <- foreground = pictures $ getAsset a fgImage : rest
+      | Just fgImage <- foreground = pictures $ getImageAsset a fgImage : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer fgLayers
 
-    renderLayer = renderTileGrid t tileSet . tileGrid
+    renderLayer = renderTileGrid ft tileSet . tileGrid
 
 renderTileGrid :: Float -> TileSet -> TileGrid -> [Picture]
-renderTileGrid t _ [] = []
-renderTileGrid t ts (((x, y), tile) : is)
-  | Just pic <- renderTile t ts tile (x + 4, y + 4) = pic : renderTileGrid t ts is
+renderTileGrid ft _ [] = []
+renderTileGrid ft ts (((x, y), tile) : is)
+  | Just pic <- renderTile ft ts tile (x + 4, y + 4) = pic : renderTileGrid ft ts is
   -- If tile can't be rendered (should never happen though)
-  | otherwise = trace ("Can't render tile: " ++ show tile) renderTileGrid t ts is
+  | otherwise = trace ("Can't render tile: " ++ show tile) renderTileGrid ft ts is
 
 renderTile :: Float -> TileSet -> Int -> Vec2 -> Maybe Picture
 renderTile _ ts 0 xy = Nothing
-renderTile t ts i xy
-  | Just p <- lookup (animateTile t i) ts = Just $ setPos xy p
+renderTile ft ts i xy
+  | Just p <- lookup (animateTile ft i) ts = Just $ setPos xy p
   | otherwise = Just $ renderDbgString red ("!tile: " ++ show i)
 
 -- TODO: Rewrite this to use random animations, instead of time based.
 animateTile :: Float -> Int -> Int
-animateTile time i
+animateTile ft i
   -- Acid
   | i == 673 && odd t = 674
   | i == 674 && odd t = 673
@@ -183,10 +183,29 @@ animateTile time i
   -- Non animated tile
   | otherwise = i
   where
-    t = round time
+    t = round ft
 
 renderCursor :: Assets -> World -> Picture
-renderCursor a (World _ (Input _ _ p)) = setPos p $ getAsset a "Cursor"
+renderCursor a (World _ (Input _ _ p)) = setPos p $ getImageAsset a "Cursor"
 
-renderPlayer :: Assets -> Player -> Picture
-renderPlayer a (Player _ _ _ _ _ _ (x, y)) = setPos (x, y) $ getAsset a "TempChar"
+renderPlayer :: Float -> Assets -> World -> Player -> Picture
+renderPlayer ft a w p =
+  setPos (x, y) pic
+  where
+    (mx, my) = pointer $ input w
+    (x, y) = playerPosition p
+    -- Direction of the mouse pointer relative to the player.
+    (dx, dy) = (mx - x, my - y)
+    sheet = playerSheet a
+    isIdle = playerState p == IdleState
+    -- Which picture/sprite to display
+    pic
+      -- Idle states
+      | isIdle && dx > 0 = playerIdleRight sheet
+      | isIdle = playerIdleLeft sheet
+      | dx > 0 = playerWalkRight sheet !! frame
+      | otherwise = playerWalkLeft sheet !! frame
+      where
+        -- Returns 0-7 each second (inclusive), giving a framerate of 8 FPS.
+        frame :: Int
+        frame = floor $ (ft - fromIntegral (floor ft)) * 8

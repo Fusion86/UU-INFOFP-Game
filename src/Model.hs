@@ -6,11 +6,15 @@ import Graphics.Gloss (Picture)
 import Graphics.Gloss.Interface.IO.Interact (Key)
 import SDL.Font (Font)
 
-type Assets = Map String Picture
-
 type TileSet = Map Int Picture
 
 type Vec2 = (Float, Float)
+
+data Assets = Assets
+  { images :: Map String Picture,
+    playerSheet :: PlayerCharacterSheet
+  }
+  deriving (Show)
 
 data World = World
   { scene :: Scene,
@@ -58,6 +62,8 @@ data InputEvent
   | MenuBack
   deriving (Show, Eq)
 
+data CharacterState = MovingState | IdleState deriving (Show, Eq)
+
 data Player = Player
   { -- | Current player health.
     playerHealth :: Int,
@@ -72,7 +78,8 @@ data Player = Player
     -- | Currently active weapon.
     playerSelectedWeapon :: WeaponType,
     -- | The player's position within the current active level instance.
-    playerPosition :: Vec2
+    playerPosition :: Vec2,
+    playerState :: CharacterState
   }
   deriving (Show)
 
@@ -115,7 +122,7 @@ data EnemyInstance = EnemyInstance
   }
   deriving (Show)
 
-data EnemyType = Regular | Heavy | Fast deriving (Show)
+data EnemyType = Regular | Heavy | Fast deriving (Show, Eq)
 
 data PickupItemInstance = PickupItemInstance
   { pickupItem :: PickupItem,
@@ -140,17 +147,19 @@ data LevelObject = LevelObject
   }
   deriving (Show)
 
-type CharacterSheets = [CharacterSheet]
-
-data CharacterSheet
-  = PlayerCharacterSheet {}
-  | InfiltratorCharacterSheet {}
+data PlayerCharacterSheet = PlayerCharacterSheet
+  { playerIdleRight :: Picture,
+    playerIdleLeft :: Picture,
+    playerWalkRight :: [Picture],
+    playerWalkLeft :: [Picture]
+  }
+  deriving (Show)
 
 initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100)
+initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) IdleState
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0
@@ -164,5 +173,5 @@ createLevelInstance l = LevelInstance l [] []
 createGameplay :: Level -> Player -> Scene
 createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
   where
-    -- Sets player position to the spawn position in the level.
+    -- TODO: Set player position to the spawn position in the level.
     newPlayer = p

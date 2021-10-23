@@ -46,6 +46,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
             -- Quit
+            -- I don't want to introduce IO for the whole hierarchy just because of this one function.
             Just 2 -> unsafePerformIO exitSuccess
             -- Default
             _ -> s
@@ -79,7 +80,10 @@ updateScene _ d w@(World s@Gameplay {} _)
     (x, y) = playerPosition pl
     lvlObjs = levelObjects $ level $ levelInstance s
 
-    newPlayer = pl {playerPosition = newPlayerPosition}
+    newPlayer
+      -- Change state to IdleState when the player hasn't moved.
+      | newPlayerPosition == (x, y) = pl {playerState = IdleState}
+      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState}
     playerSize = (16, 16)
 
     -- TODO: Write better code
@@ -93,6 +97,8 @@ updateScene _ d w@(World s@Gameplay {} _)
     newPlayerY' = y + (forceUp + forceDown) * (d / 2)
     newPlayerY'' = y + (forceUp + forceDown) * (d / 4)
 
+    -- TODO: Like honestly, please clean this up :(
+    -- (Though I guess it works fine, so maybe don't touch it idk)
     newPlayerPosition
       -- If the move is valid, return the new position.
       | validMove (newPlayerX - 8, newPlayerY - 4) playerSize =
@@ -112,6 +118,15 @@ updateScene _ d w@(World s@Gameplay {} _)
       -- Half step - If the move is valid, return the new position.
       | validMove (newPlayerX' - 8, y - 4) playerSize =
         (newPlayerX', y)
+      --
+      -- Only check collision on the Y axis.
+      -- This is needed to allow the player to "climb walls".
+      -- If the move is valid, return the new position.
+      | validMove (x - 8, newPlayerY - 4) playerSize =
+        (x, newPlayerY)
+      -- Half step - If the move is valid, return the new position.
+      | validMove (x - 8, newPlayerY' - 4) playerSize =
+        (x, newPlayerY')
       -- If not a valid move, just return the old position.
       | otherwise = (x, y)
 

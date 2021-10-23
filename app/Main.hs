@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns #-}
-
 module Main where
 
 import Assets
@@ -24,7 +22,7 @@ createWindow =
 main :: IO ()
 main = do
   -- Eager load all assets
-  !assets <- loadAssets $ "assets" </> "images"
+  !assets <- loadAssets "assets"
   !levels <- loadLevels $ "assets" </> "levels"
   !tileSet <- loadTileSet $ "assets" </> "TileSet.png"
 
