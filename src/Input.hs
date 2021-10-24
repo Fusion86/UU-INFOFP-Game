@@ -18,17 +18,20 @@ addEvent e w@(World _ i@(Input _ ev _)) = w {input = i {events = dbg "events" $ 
 isKeyDown :: Input -> Key -> Bool
 isKeyDown i k = member k (keys i)
 
+menuKeyMap :: Key -> Maybe InputEvent
+menuKeyMap (SpecialKey KeyUp) = Just MenuUp
+menuKeyMap (SpecialKey KeyDown) = Just MenuDown
+menuKeyMap (SpecialKey KeyEsc) = Just MenuBack
+menuKeyMap (SpecialKey KeyEnter) = Just MenuEnter
+menuKeyMap (SpecialKey KeySpace) = Just MenuEnter
+menuKeyMap (Char 'w') = Just MenuUp
+menuKeyMap (Char 's') = Just MenuDown
+menuKeyMap _ = Nothing
+
 handleInput :: Event -> World -> World
--- Up Arrow pressed
-handleInput (EventKey k@(SpecialKey KeyUp) Down _ _) w = addEvent MenuUp $ addKey k w
--- Down Arrow pressed
-handleInput (EventKey k@(SpecialKey KeyDown) Down _ _) w = addEvent MenuDown $ addKey k w
--- Esc pressed
-handleInput (EventKey k@(SpecialKey KeyEsc) Down _ _) w = addEvent MenuBack $ addKey k w
--- Enter pressed
-handleInput (EventKey k@(SpecialKey KeyEnter) Down _ _) w = addEvent MenuEnter $ addKey k w
--- Any button/key pressed
-handleInput (EventKey k Down _ _) w = addKey k w
+handleInput (EventKey k Down _ _) w
+  | Just ev <- menuKeyMap k = addEvent ev $ addKey k w
+  | otherwise = addKey k w
 -- Any button/key released
 handleInput (EventKey k Up _ _) w = removeKey k w
 -- Mouse move event

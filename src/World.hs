@@ -4,6 +4,7 @@ import Assets
 import Collision
 import Common
 import Coordinates
+import Data.List (find)
 import Data.Maybe (fromMaybe)
 import Data.Set (empty, member)
 import Graphics.Gloss.Interface.IO.Game
@@ -78,73 +79,77 @@ updateScene _ d w@(World s@Gameplay {} _)
     pt = playTime $ scene w
     pl = player $ scene w
     (x, y) = playerPosition pl
-    jumpCount = playerJumpCount pl
+    (vx, vy) = playerVelocity pl
+    state = playerState pl
     lvlObjs = levelObjects $ level $ levelInstance s
+
+    gravity = 10
 
     newPlayer
       -- Change state to IdleState when the player hasn't moved.
-      | newPlayerPosition == (x, y) = pl {playerState = IdleState, playerJumpCount = newJumpCount}
-      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState, playerJumpCount = newJumpCount}
+      | newPlayerPosition == (x, y) = pl {playerState = IdleState, playerVelocity = newVelocity}
+      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState, playerVelocity = newVelocity}
     playerSize = (16, 16)
 
-    onGround :: Bool 
-    onGround = not $ validMove (x, y + 0.1) playerSize
+    velocityY = tmp + gravity
+      where
+        tmp
+          | onGround && jumpKeyDown = -300
+          | canClimb && jumpKeyDown = -100
+          | onGround = 0
+          | not onGround && not canJumpHigher = 0
+          | otherwise = vy
 
-    -- TODO: Write better code
-    newJumpCount :: Int 
-    newJumpCount | jumpCount > 0 = jumpCount - 1
-                 | onGround && isKeyDown i (Char 'w') = 10
-                 | onGround = 0
-                 | otherwise = -1  
+        jumpKeyDown = isKeyDown i (Char 'w') || isKeyDown i (SpecialKey KeySpace)
 
-    forceLeft = if isKeyDown i (Char 'a') then -100 else 0
-    forceRight = if isKeyDown i (Char 'd') then 100 else 0
-    forceUp = if newJumpCount > 0 then -400 else 0 -- TODO: Make the jumpCount and force more balanced
-    forceDown = if isKeyDown i (Char 's') then 200 else 100 -- TODO: Gravity
-    newPlayerX = x + (forceLeft + forceRight) * d
-    newPlayerY = y + (forceUp + forceDown) * d
-    newPlayerX' = x + (forceLeft + forceRight) * (d / 2)
-    newPlayerY' = y + (forceUp + forceDown) * (d / 2)
-    newPlayerY'' = y + (forceUp + forceDown) * (d / 4)
+    velocityX
+      | isKeyDown i (Char 'a') = max (-100) vxl
+      | isKeyDown i (Char 'd') = min 100 vxr
+      | otherwise = 0
+      where
+        vxl
+          | vx > -25 = -25
+          -- This does NOT work
+          -- otherwise = dbg "otherwise" $ vx ** 1.05
+          | otherwise = (abs vx ** 1.05) * (-1)
+        vxr
+          | vx < 25 = 25
+          | otherwise = vx ** 1.05
 
-    -- TODO: Like honestly, please clean this up :(
-    -- (Though I guess it works fine, so maybe don't touch it idk)
-    newPlayerPosition
-      -- If the move is valid, return the new position.
-      | validMove (newPlayerX - 8, newPlayerY - 4) playerSize =
-        (newPlayerX, newPlayerY)
-      -- Half step - If the move is valid, return the new position.
-      | validMove (newPlayerX' - 8, newPlayerY' - 4) playerSize =
-        (newPlayerX', newPlayerY')
-      -- Half step - If the move is valid, return the new position.
-      | validMove (newPlayerX' - 8, newPlayerY'' - 4) playerSize =
-        (newPlayerX', newPlayerY'')
-      --
-      -- Only check collision on the X axis.
-      -- This is needed to allow the player to move when standing on the ground.
-      -- If the move is valid, return the new position.
-      | validMove (newPlayerX - 8, y - 4) playerSize =
-        (newPlayerX, y)
-      -- Half step - If the move is valid, return the new position.
-      | validMove (newPlayerX' - 8, y - 4) playerSize =
-        (newPlayerX', y)
-      --
-      -- Only check collision on the Y axis.
-      -- This is needed to allow the player to "climb walls".
-      -- If the move is valid, return the new position.
-      | validMove (x - 8, newPlayerY - 4) playerSize =
-        (x, newPlayerY)
-      -- Half step - If the move is valid, return the new position.
-      | validMove (x - 8, newPlayerY' - 4) playerSize =
-        (x, newPlayerY')
-      -- If not a valid move, just return the old position.
-      | otherwise = (x, y)
+    newVelocity = (velocityX, velocityY)
+
+    -- newPlayerX = x + (velocityX * d)
+    -- newPlayerY = y + (velocityY + gravity * d)
+
+    newPlayerPosition = (newPlayerX, newPlayerY)
+      where
+        -- Finds the best move we can do. Kinda brute-force, but hey it works.
+        newPlayerX =
+          fromMaybe x $
+            find validMoveX $
+              map (\z -> x + (velocityX * z)) [d, d / 2, d / 3, d / 4]
+
+        newPlayerY =
+          fromMaybe y $
+            find validMoveY $
+              map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
+
+    validMoveX z = validMove (z - 8, y - 4) playerSize
+    validMoveY z = validMove (x - 8, z - 4) playerSize
 
     collisionObjects :: [LevelObject]
     collisionObjects = filter ((==) "Collision" . objectName) lvlObjs
 
-    -- Returns true when the newPlayerPosition is a valid move.
     validMove :: Vec2 -> Vec2 -> Bool
     validMove pos@(x, y) size@(w, h)
       | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = False
       | otherwise = not $ any (intersects pos size) collisionObjects
+
+    canClimb :: Bool
+    canClimb = not (validMove (x - 10, y - 4 + 1.5) playerSize) || not (validMove (x - 6, y - 4 + 1.5) playerSize)
+
+    onGround :: Bool
+    onGround = not $ validMoveY (y + 1.5)
+
+    canJumpHigher :: Bool
+    canJumpHigher = validMoveY (y - 1.2)

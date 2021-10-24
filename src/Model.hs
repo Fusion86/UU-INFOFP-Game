@@ -62,7 +62,10 @@ data InputEvent
   | MenuBack
   deriving (Show, Eq)
 
-data CharacterState = MovingState | IdleState deriving (Show, Eq)
+data CharacterState
+  = MovingState
+  | IdleState
+  deriving (Show, Eq)
 
 data Player = Player
   { -- | Current player health.
@@ -79,12 +82,8 @@ data Player = Player
     playerSelectedWeapon :: WeaponType,
     -- | The player's position within the current active level instance.
     playerPosition :: Vec2,
-    playerState :: CharacterState,
-    -- | The amount of ticks the player should still jump for -- 
-    -- greater than 0: ticks to jump -- 
-    -- 0: able to jump --
-    -- -1: not able to jump --
-    playerJumpCount :: Int
+    playerVelocity :: Vec2,
+    playerState :: CharacterState
   }
   deriving (Show)
 
@@ -164,7 +163,7 @@ initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) IdleState (-1)
+initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) (0, 0) IdleState
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0
