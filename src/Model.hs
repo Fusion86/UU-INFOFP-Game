@@ -79,7 +79,12 @@ data Player = Player
     playerSelectedWeapon :: WeaponType,
     -- | The player's position within the current active level instance.
     playerPosition :: Vec2,
-    playerState :: CharacterState
+    playerState :: CharacterState,
+    -- | The amount of ticks the player should still jump for -- 
+    -- greater than 0: ticks to jump -- 
+    -- 0: able to jump --
+    -- -1: not able to jump --
+    playerJumpCount :: Int
   }
   deriving (Show)
 
@@ -159,7 +164,7 @@ initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) IdleState
+initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) IdleState (-1)
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0
