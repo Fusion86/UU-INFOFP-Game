@@ -78,18 +78,28 @@ updateScene _ d w@(World s@Gameplay {} _)
     pt = playTime $ scene w
     pl = player $ scene w
     (x, y) = playerPosition pl
+    jumpCount = playerJumpCount pl
     lvlObjs = levelObjects $ level $ levelInstance s
 
     newPlayer
       -- Change state to IdleState when the player hasn't moved.
-      | newPlayerPosition == (x, y) = pl {playerState = IdleState}
-      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState}
+      | newPlayerPosition == (x, y) = pl {playerState = IdleState, playerJumpCount = newJumpCount}
+      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState, playerJumpCount = newJumpCount}
     playerSize = (16, 16)
 
+    onGround :: Bool 
+    onGround = not $ validMove (x, y + 0.1) playerSize
+
     -- TODO: Write better code
+    newJumpCount :: Int 
+    newJumpCount | jumpCount > 0 = jumpCount - 1
+                 | onGround && isKeyDown i (Char 'w') = 10
+                 | onGround = 0
+                 | otherwise = -1  
+
     forceLeft = if isKeyDown i (Char 'a') then -100 else 0
     forceRight = if isKeyDown i (Char 'd') then 100 else 0
-    forceUp = if isKeyDown i (Char 'w') then -200 else 0 -- TODO: Check if player can jump
+    forceUp = if newJumpCount > 0 then -400 else 0 -- TODO: Make the jumpCount and force more balanced
     forceDown = if isKeyDown i (Char 's') then 200 else 100 -- TODO: Gravity
     newPlayerX = x + (forceLeft + forceRight) * d
     newPlayerY = y + (forceUp + forceDown) * d
