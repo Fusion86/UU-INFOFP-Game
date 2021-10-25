@@ -100,16 +100,20 @@ renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
   where
     -- TODO: Cleanup spaghetti code
     -- Returns the index of each item that is visible in the menu.
-    visibleItemRange =
-      let range = take visibleItemCount (drop dropCount [0 .. (length xs - 1)])
-       in range
+    visibleItemRange = take visibleItemCount (drop dropCount [0 .. (length xs - 1)])
       where
         -- Number of visible items in the menu.
         visibleItemCount = 9
-
+        -- The middle item, zero indexed 
+        midPoint = visibleItemCount `div` 2
+        -- max items we can drop without showing empty slots at the end
+        maxDropCount = max 0 (length xs - visibleItemCount)
+        -- the amount of items we want to drop to center the selected one
+        initialDropCount = selectedIndex - midPoint
+        -- the end result
         dropCount
-          | selectedIndex >= length xs - visibleItemCount = min (selectedIndex - visibleItemCount `div` 2) 8
-          | otherwise = max 0 (selectedIndex - visibleItemCount `div` 2)
+          | selectedIndex > midPoint = min maxDropCount initialDropCount
+          | otherwise = 0
 
     helper :: Int -> [String] -> [IO Picture]
     helper _ [] = []
