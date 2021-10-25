@@ -52,3 +52,9 @@ LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
 # Make sure to exit the game from the main menu by navigating to Quit. Exiting from the console, or by closing the window does NOT work.
 stack --profile run --rts-options -p
 ```
+
+## Credits
+
+- #haskell on irc.libera.chat
+- [Space War Man: platform shmup set](https://opengameart.org/content/space-war-man-platform-shmup-set)
+- [Denzi explosion for Space War Man](https://opengameart.org/content/denzi-explosion-for-space-war-man)

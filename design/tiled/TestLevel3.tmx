@@ -8,7 +8,7 @@
   <property name="Foreground" value="TestLevel3Fg"/>
   <property name="Name" value="Test Level 3"/>
  </properties>
- <tileset firstgid="1" source="SWM Tiles.tsx"/>
+ <tileset firstgid="1" source="TileSet.tsx"/>
  <layer id="1" name="Background (Bake)" width="60" height="40" visible="0">
   <data encoding="csv">
 8,8,8,8,8,8,52,8,8,52,52,8,8,8,8,52,52,52,8,52,52,52,8,52,52,52,52,52,8,8,8,8,8,8,8,8,8,52,52,8,8,52,8,8,8,8,8,8,8,8,8,8,52,52,52,52,52,52,52,52,

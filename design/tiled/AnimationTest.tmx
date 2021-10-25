@@ -6,7 +6,7 @@
  <properties>
   <property name="Name" value="AnimationTest"/>
  </properties>
- <tileset firstgid="1" source="SWM Tiles.tsx"/>
+ <tileset firstgid="1" source="TileSet.tsx"/>
  <layer id="1" name="Background" width="60" height="40">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

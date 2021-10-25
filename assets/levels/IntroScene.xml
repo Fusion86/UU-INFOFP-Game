@@ -3,7 +3,7 @@
  <properties>
   <property name="Name" value="Intro Map"/>
  </properties>
- <tileset firstgid="1" source="../../design/tiled/SWM Tiles.tsx"/>
+ <tileset firstgid="1" source="../../design/tiled/TileSet.tsx"/>
  <layer id="1" name="Background" width="60" height="40">
   <data encoding="csv">
 11,55,11,55,11,11,11,11,11,11,55,11,55,55,11,55,55,55,55,11,11,11,11,55,11,55,11,11,11,11,11,11,11,55,11,11,55,11,11,55,11,11,55,11,55,55,55,11,55,11,11,11,55,55,55,11,11,55,55,11,

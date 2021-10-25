@@ -4,7 +4,7 @@
   <property name="Background" value="BlackBg"/>
   <property name="Name" value="Simple Level"/>
  </properties>
- <tileset firstgid="1" source="../../design/tiled/SWM Tiles.tsx"/>
+ <tileset firstgid="1" source="../../design/tiled/TileSet.tsx"/>
  <layer id="1" name="Background" width="60" height="40">
   <data encoding="csv">
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

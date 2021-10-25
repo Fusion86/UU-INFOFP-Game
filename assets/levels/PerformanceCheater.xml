@@ -5,7 +5,7 @@
   <property name="Foreground" value="PerformanceCheaterFg"/>
   <property name="Name" value="Performance Cheater"/>
  </properties>
- <tileset firstgid="1" source="../../design/tiled/SWM Tiles.tsx"/>
+ <tileset firstgid="1" source="../../design/tiled/TileSet.tsx"/>
  <layer id="1" name="Background (Bake)" width="60" height="40">
   <data encoding="csv">
 12,13,57,57,13,12,57,58,58,13,56,58,13,58,58,56,56,12,56,12,12,56,57,58,57,56,12,13,57,56,14,57,12,12,58,14,56,14,57,58,56,56,13,56,13,58,56,56,57,14,57,56,13,12,57,13,12,58,13,58,
