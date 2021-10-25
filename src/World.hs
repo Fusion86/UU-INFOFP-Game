@@ -86,7 +86,7 @@ updateScene _ d w@(World s@Gameplay {} _)
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level $ levelInstance s
 
-    newLevelInstance = lvlInst {levelEntities = map updateEntity newLevelEntities}
+    newLevelInstance = lvlInst {levelEntities =  filterEntity $ map updateEntity newLevelEntities}
       where
         newLevelEntities :: [LevelEntity]
         newLevelEntities
@@ -95,6 +95,12 @@ updateScene _ d w@(World s@Gameplay {} _)
 
         updateEntity :: LevelEntity -> LevelEntity
         updateEntity entity@(LevelEntity _ (x, y) _ (vx, vy)) = entity {entityPosition = (x + vx, y + vy)}
+
+        filterEntity :: [LevelEntity] -> [LevelEntity]
+        filterEntity = filter validPosition 
+
+        validPosition :: LevelEntity -> Bool
+        validPosition entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldHeight  || y < 0 || y > worldWidth 
 
         newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (1 * dx', 1 * dy')
         (dx, dy) = (mx - x, my - y)
