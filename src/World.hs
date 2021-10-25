@@ -109,8 +109,6 @@ updateScene _ d w@(World s@Gameplay {} _)
       where
         vxl
           | vx > -25 = -25
-          -- This does NOT work
-          -- otherwise = dbg "otherwise" $ vx ** 1.05
           | otherwise = (abs vx ** 1.05) * (-1)
         vxr
           | vx < 25 = 25
@@ -145,11 +143,16 @@ updateScene _ d w@(World s@Gameplay {} _)
       | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = False
       | otherwise = not $ any (intersects pos size) collisionObjects
 
+    -- Don't question it.
+    onGroundMagicNumber = 2
+
     canClimb :: Bool
-    canClimb = not (validMove (x - 10, y - 4 + 1.5) playerSize) || not (validMove (x - 6, y - 4 + 1.5) playerSize)
+    canClimb =
+      not (validMove (x - 10, y - 4 + onGroundMagicNumber) playerSize)
+        || not (validMove (x - 6, y - 4 + onGroundMagicNumber) playerSize)
 
     onGround :: Bool
-    onGround = not $ validMoveY (y + 1.5)
+    onGround = not $ validMoveY (y + onGroundMagicNumber)
 
     canJumpHigher :: Bool
     canJumpHigher = validMoveY (y - 1.2)
