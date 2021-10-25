@@ -104,8 +104,9 @@ data Level = Level
 
 data LevelInstance = LevelInstance
   { level :: Level,
-    enemies :: [EnemyInstance],
-    pickupItems :: [PickupItemInstance]
+    levelEntities :: [LevelEntity]
+    -- enemies :: [EnemyInstance],
+    -- pickupItems :: [PickupItemInstance]
   }
   deriving (Show)
 
@@ -128,18 +129,27 @@ data EnemyInstance = EnemyInstance
 
 data EnemyType = Regular | Heavy | Fast deriving (Show, Eq)
 
-data PickupItemInstance = PickupItemInstance
-  { pickupItem :: PickupItem,
-    pickupPosition :: Vec2
+-- data PickupItemInstance = PickupItemInstance
+--   { pickupItem :: PickupItem,
+--     pickupPosition :: Vec2
+--   }
+--   deriving (Show)
+
+data LevelEntity = LevelEntity
+  { entityType :: EntityType,
+    entityPosition :: Vec2,
+    entitySize :: Vec2,
+    entityVelocity :: Vec2
   }
   deriving (Show)
 
-data PickupItem
+data EntityType
   = HealthPotion
   | MaxHealthBoost
   | DamageBoost
   | JumpHeightBoost
   | AmmoPickup WeaponType
+  | Bullet WeaponType
   deriving (Show, Eq)
 
 -- Might not be the best name for it, but in our map editor the same name is used.
@@ -172,7 +182,7 @@ initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
 createLevelInstance :: Level -> LevelInstance
-createLevelInstance l = LevelInstance l [] []
+createLevelInstance l = LevelInstance l []
 
 createGameplay :: Level -> Player -> Scene
 createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0

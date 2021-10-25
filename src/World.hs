@@ -73,16 +73,37 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
 -- NOTE: "lens/optics provide a language to do this pattern matching." -- dminuoso
 updateScene _ d w@(World s@Gameplay {} _)
   | MenuBack `elem` events i = createMenu PauseMenu (Just s)
-  | otherwise = s {player = newPlayer, playTime = pt + d}
+  | otherwise = s {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
   where
     i = input w
     pt = playTime $ scene w
     pl = player $ scene w
+    (mx, my) = pointer $ input w
     (x, y) = playerPosition pl
     (vx, vy) = playerVelocity pl
     state = playerState pl
+    lvlInst = levelInstance s
+    lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level $ levelInstance s
 
+    newLevelInstance = lvlInst {levelEntities = map updateEntity newLevelEntities}
+      where
+        newLevelEntities :: [LevelEntity]
+        newLevelEntities
+          | isKeyDown i (MouseButton LeftButton) = newBullet : lvlEntities
+          | otherwise = lvlEntities
+
+        updateEntity :: LevelEntity -> LevelEntity
+        updateEntity entity@(LevelEntity _ (x, y) _ (vx, vy)) = entity {entityPosition = (x + vx, y + vy)}
+
+        newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (1 * dx', 1 * dy')
+        (dx, dy) = (mx - x, my - y)
+        f = sqrt (dx ** 2 + dy ** 2)
+        (dx', dy') = (dx / f, dy / f)
+
+    --
+    -- Move this to some player movement code function or so...
+    --
     gravity = 10
 
     newPlayer
@@ -156,3 +177,7 @@ updateScene _ d w@(World s@Gameplay {} _)
 
     canJumpHigher :: Bool
     canJumpHigher = validMoveY (y - 1.2)
+
+---
+---
+---

@@ -76,6 +76,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
   return $
     pictures
       [ bg,
+        renderEntities a (levelEntities levelInstance),
         -- render pickups
         -- render enemies
         renderPlayer pt a w p,
@@ -209,3 +210,9 @@ renderPlayer ft a w p =
         -- Returns 0-7 each second (inclusive), giving a framerate of 8 FPS.
         frame :: Int
         frame = floor $ (ft - fromIntegral (floor ft)) * 8
+
+renderEntities :: Assets -> [LevelEntity] -> Picture
+renderEntities a = pictures . map renderEntity
+  where
+    renderEntity :: LevelEntity -> Picture
+    renderEntity x = setPos (entityPosition x) $ getImageAsset a "BulletTemp"
