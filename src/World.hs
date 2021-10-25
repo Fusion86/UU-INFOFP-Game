@@ -100,7 +100,7 @@ updateScene _ d w@(World s@Gameplay {} _)
         filterEntity = filter validPosition 
 
         validPosition :: LevelEntity -> Bool
-        validPosition entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldHeight  || y < 0 || y > worldWidth 
+        validPosition entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldWidth  || y < 0 || y > worldHeight
 
         newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (1 * dx', 1 * dy')
         (dx, dy) = (mx - x, my - y)
