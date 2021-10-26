@@ -26,7 +26,6 @@ updatePlayer d w s
     lvlObjs = levelObjects $ level lvlInst
 
     -- Constants
-    gravity = 10
     playerSize = (16, 16)
 
     velocityY = tmp + gravity
@@ -47,7 +46,7 @@ updatePlayer d w s
       where
         vxl
           | vx > -25 = -25
-          | otherwise = (abs vx ** 1.05) * (-1)
+          | otherwise = -(abs vx ** 1.05)
         vxr
           | vx < 25 = 25
           | otherwise = vx ** 1.05

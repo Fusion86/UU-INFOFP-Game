@@ -1,4 +1,4 @@
-module Rendering where
+  module Rendering where
 
 import Assets
 import Colors
@@ -77,6 +77,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
     pictures
       [ bg,
         renderEntities a (levelEntities levelInstance),
+        renderEnemies pt a (levelEnemies levelInstance),
         -- render pickups
         -- render enemies
         renderPlayer pt a w p,
@@ -228,3 +229,23 @@ renderEntities a = pictures . map renderEntity
         -- frame = min 2 $ dbg "test" $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3 - 1
         frame = min 2 $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3
     getEntityPicture _ = renderDbgString red "entity not implemented"
+
+renderEnemies :: Float -> Assets -> [EnemyInstance] -> Picture
+renderEnemies ft a = pictures . map renderEnemy
+  where
+    sheet = enemyCharacterSheet a
+
+    renderEnemy :: EnemyInstance -> Picture
+    renderEnemy x = setPos (enemyPosition x) $ getEnemyPicture (enemyType x)
+      where
+        (vx, vy) = enemyVelocity x
+
+        getEnemyPicture :: EnemyType -> Picture
+        getEnemyPicture CrabEnemy
+          | vx > 0 = crabWalkRight sheet !! frame
+          | vx < 0 = crabWalkLeft sheet !! frame
+          | otherwise = crabIdle sheet
+          where
+            frame :: Int
+            frame = floor ((ft - fromIntegral (floor ft)) * 6) `mod` 3 -- Length of crabWalkRight and crabWalkLeft
+        getEnemyPicture _ = renderDbgString red "entity not implemented"

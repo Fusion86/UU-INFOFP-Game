@@ -101,12 +101,17 @@ updateScene _ d w@(World s@Gameplay {} _)
       | shouldShootNewBullet = weaponShootCooldown selectedWeapon
       | otherwise = max 0 $ shootCooldown - d
 
-    newLevelInstance = lvlInst {levelEntities = filterEntity $ mapMaybe updateEntity newLevelEntities}
+    newLevelInstance = lvlInst {levelEntities = mapMaybe updateEntity newLevelEntities, levelEnemies = mapMaybe updateEnemy newLevelEnemies}
       where
         newLevelEntities :: [LevelEntity]
         newLevelEntities
           | shouldShootNewBullet = newBullet : lvlEntities
           | otherwise = lvlEntities
+          where
+            newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (5 * dx', 5 * dy')
+            (dx, dy) = (mx - x, my - y)
+            f = sqrt (dx ** 2 + dy ** 2)
+            (dx', dy') = (dx / f, dy / f)
 
         updateEntity :: LevelEntity -> Maybe LevelEntity
         updateEntity entity@(LevelEntity (ExplosionEntity totalLifetime lifetime) _ _ _)
@@ -125,14 +130,50 @@ updateScene _ d w@(World s@Gameplay {} _)
             bulletHitsWall :: Bool
             bulletHitsWall = doesCollide colliders newPos size
 
-        filterEntity :: [LevelEntity] -> [LevelEntity]
-        filterEntity = filter validPosition'
+        newLevelEnemies :: [EnemyInstance]
+        newLevelEnemies = levelEnemies lvlInst
 
-        validPosition' :: LevelEntity -> Bool
-        validPosition' entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldWidth || y < 0 || y > worldHeight
-
-        newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (5 * dx', 5 * dy')
+        updateEnemy :: EnemyInstance -> Maybe EnemyInstance
+        updateEnemy enemy = Just $ enemy {enemyPosition = newPosition, enemyVelocity = newVelocity}
           where
-            (dx, dy) = (mx - x, my - y)
-            f = sqrt (dx ** 2 + dy ** 2)
-            (dx', dy') = (dx / f, dy / f)
+            (x, y) = enemyPosition enemy
+            (vx, vy) = enemyVelocity enemy
+            size@(w, h) = (14, 14)
+
+            speed = enemySpeed (enemyType enemy)
+            acceleration = speed / 4
+            newVelocity = (velocityX, velocityY)
+
+            velocityY = tmp + gravity
+              where
+                tmp
+                  | onGround = 0
+                  | otherwise = vy
+
+            velocityX
+              | onGround && not (validMoveX (x + 10)) = vx - acceleration
+              | onGround && not (validMoveX (x - 10)) = vx + acceleration
+              | vx > 0 = min speed $ vx + acceleration
+              | otherwise = max (-speed) $ vx - acceleration
+
+            newPosition = (newX, newY)
+              where
+                newX =
+                  fromMaybe x $
+                    find validMoveX $
+                      map (\z -> x + (velocityX * z)) [d, d / 2, d / 3, d / 4]
+
+                newY =
+                  fromMaybe y $
+                    find validMoveY $
+                      map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
+
+            validMove pos@(x, y) size = not $ doesCollide (collisionObjects lvlObjs) (x - 7, y - 7) size
+            validMoveX z = validMove (z, y) size
+            validMoveY z = validMove (x, z) size
+
+            -- Don't question it.
+            onGroundMagicNumber = 2
+
+            onGround :: Bool
+            onGround = not $ validMoveY (y + onGroundMagicNumber)

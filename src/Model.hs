@@ -13,7 +13,8 @@ type Vec2 = (Float, Float)
 data Assets = Assets
   { images :: Map String Picture,
     playerSheet :: PlayerCharacterSheet,
-    fxSheet :: FxSheet
+    fxSheet :: FxSheet,
+    enemyCharacterSheet :: EnemyCharacterSheet
   }
   deriving (Show)
 
@@ -106,8 +107,8 @@ data Level = Level
 
 data LevelInstance = LevelInstance
   { level :: Level,
-    levelEntities :: [LevelEntity]
-    -- enemies :: [EnemyInstance],
+    levelEntities :: [LevelEntity],
+    levelEnemies :: [EnemyInstance]
     -- pickupItems :: [PickupItemInstance]
   }
   deriving (Show)
@@ -125,11 +126,13 @@ data TileLayer = TileLayer
 data EnemyInstance = EnemyInstance
   { enemyType :: EnemyType,
     enemyHealth :: Int,
-    enemyPosition :: Vec2
+    enemyPosition :: Vec2,
+    enemyVelocity :: Vec2,
+    enemyState :: CharacterState
   }
   deriving (Show)
 
-data EnemyType = Regular | Heavy | Fast deriving (Show, Eq)
+data EnemyType = CrabEnemy | Heavy | Fast deriving (Show, Eq)
 
 -- data PickupItemInstance = PickupItemInstance
 --   { pickupItem :: PickupItem,
@@ -172,6 +175,13 @@ data PlayerCharacterSheet = PlayerCharacterSheet
   }
   deriving (Show)
 
+data EnemyCharacterSheet = EnemyCharacterSheet
+  { crabIdle :: Picture,
+    crabWalkLeft :: [Picture],
+    crabWalkRight :: [Picture]
+  }
+  deriving (Show)
+
 data FxSheet = FxSheet
   { playerBulletImpact :: [Picture]
   }
@@ -190,7 +200,8 @@ initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
 createLevelInstance :: Level -> LevelInstance
-createLevelInstance l = LevelInstance l []
+createLevelInstance l =
+  LevelInstance l [] [EnemyInstance CrabEnemy 100 (30, 30) (100, 0) IdleState]
 
 createGameplay :: Level -> Player -> Scene
 createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
@@ -201,3 +212,8 @@ createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
 weaponShootCooldown :: WeaponType -> Float
 weaponShootCooldown _ = 0.1
 
+enemySpeed :: EnemyType -> Float
+enemySpeed _ = 50
+
+gravity :: Float
+gravity = 10

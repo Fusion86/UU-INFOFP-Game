@@ -24,8 +24,9 @@ loadAssets f = do
   -- Load character sheets
   playerCharacterSheet <- loadPlayerCharacterSheet (f </> "PlayerCharacterSheet.png")
   fxCharacterSheet <- loadFxCharacterSheet (f </> "FxSheet.png")
+  enemyCharacterSheet <- loadEnemyCharacterSheet (f </> "ObjectsAndEnemies.png")
 
-  return $ dbg "Loaded assets" $ Assets assets playerCharacterSheet fxCharacterSheet
+  return $ dbg "Loaded assets" $ Assets assets playerCharacterSheet fxCharacterSheet enemyCharacterSheet
   where
     isAssetFile = isSuffixOf "png"
 
@@ -77,6 +78,26 @@ loadFxCharacterSheet f = do
         f x y w h = fromImageRGBA8 $ crop x y w h img
 
         playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
+
+loadEnemyCharacterSheet :: FilePath -> IO EnemyCharacterSheet
+loadEnemyCharacterSheet f = do
+  x <- readImage f
+  case x of
+    Left err -> error err
+    Right dynImg ->
+      return $
+        EnemyCharacterSheet
+          crabIdle
+          crabWalkLeft
+          crabWalkRight
+      where
+        img = convertRGBA8 dynImg
+        f :: Int -> Int -> Int -> Int -> Picture
+        f x y w h = fromImageRGBA8 $ crop x y w h img
+
+        crabIdle = f 1 31 16 14
+        crabWalkLeft = map (\x -> f x 31 16 14) [19, 37 .. 55]
+        crabWalkRight = map (\x -> f x 31 16 14) [73, 91 .. 109]
 
 getImageAsset :: Assets -> String -> Picture
 getImageAsset a s = case lookup s (images a) of
