@@ -12,7 +12,8 @@ type Vec2 = (Float, Float)
 
 data Assets = Assets
   { images :: Map String Picture,
-    playerSheet :: PlayerCharacterSheet
+    playerSheet :: PlayerCharacterSheet,
+    fxSheet :: FxSheet
   }
   deriving (Show)
 
@@ -80,6 +81,7 @@ data Player = Player
     playerAmmo :: Map WeaponType Int,
     -- | Currently active weapon.
     playerSelectedWeapon :: WeaponType,
+    playerShootCooldown :: Float,
     -- | The player's position within the current active level instance.
     playerPosition :: Vec2,
     playerVelocity :: Vec2,
@@ -150,6 +152,7 @@ data EntityType
   | JumpHeightBoost
   | AmmoPickup WeaponType
   | Bullet WeaponType
+  | ExplosionEntity Float Float
   deriving (Show, Eq)
 
 -- Might not be the best name for it, but in our map editor the same name is used.
@@ -169,11 +172,16 @@ data PlayerCharacterSheet = PlayerCharacterSheet
   }
   deriving (Show)
 
+data FxSheet = FxSheet
+  { playerBulletImpact :: [Picture]
+  }
+  deriving (Show)
+
 initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle (100, 100) (0, 0) IdleState
+initPlayer = Player 100 100 50 8 empty AssaultRifle 0 (100, 100) (0, 0) IdleState
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0
@@ -189,3 +197,7 @@ createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
   where
     -- TODO: Set player position to the spawn position in the level.
     newPlayer = p
+
+weaponShootCooldown :: WeaponType -> Float
+weaponShootCooldown _ = 0.1
+

@@ -5,12 +5,14 @@ import Collision
 import Common
 import Coordinates
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Set (empty, member)
 import Graphics.Gloss.Interface.IO.Game
 import Input
+import Levels
 import Menu
 import Model
+import Player
 import Rendering
 import SDL.Font (Font)
 import System.Exit (exitSuccess)
@@ -85,105 +87,52 @@ updateScene _ d w@(World s@Gameplay {} _)
     lvlInst = levelInstance s
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level $ levelInstance s
+    shootCooldown = playerShootCooldown pl
+    selectedWeapon = playerSelectedWeapon pl
+    colliders = collisionObjects lvlObjs
 
-    newLevelInstance = lvlInst {levelEntities =  filterEntity $ map updateEntity newLevelEntities}
+    newPlayer = (updatePlayer d w s) {playerShootCooldown = newShootCooldown}
+
+    shouldShootNewBullet :: Bool
+    shouldShootNewBullet = isKeyDown i (MouseButton LeftButton) && shootCooldown == 0
+
+    newShootCooldown :: Float
+    newShootCooldown
+      | shouldShootNewBullet = weaponShootCooldown selectedWeapon
+      | otherwise = max 0 $ shootCooldown - d
+
+    newLevelInstance = lvlInst {levelEntities = filterEntity $ mapMaybe updateEntity newLevelEntities}
       where
         newLevelEntities :: [LevelEntity]
         newLevelEntities
-          | isKeyDown i (MouseButton LeftButton) = newBullet : lvlEntities
+          | shouldShootNewBullet = newBullet : lvlEntities
           | otherwise = lvlEntities
 
-        updateEntity :: LevelEntity -> LevelEntity
-        updateEntity entity@(LevelEntity _ (x, y) _ (vx, vy)) = entity {entityPosition = (x + vx, y + vy)}
+        updateEntity :: LevelEntity -> Maybe LevelEntity
+        updateEntity entity@(LevelEntity (ExplosionEntity totalLifetime lifetime) _ _ _)
+          -- Destroy bullet when it is older than the totalLifetime
+          | newLifetime > totalLifetime = Nothing
+          | otherwise = Just $ entity {entityType = ExplosionEntity totalLifetime newLifetime}
+          where
+            newLifetime = lifetime + d
+        updateEntity entity@(LevelEntity t pos@(x, y) size (vx, vy))
+          -- If the bullet hits a wall, replace it with an Explosion entity.
+          | bulletHitsWall = Just $ LevelEntity (ExplosionEntity 0.15 0) pos size (0, 0)
+          | otherwise = Just entity {entityPosition = newPos}
+          where
+            newPos = (x + vx, y + vy)
+
+            bulletHitsWall :: Bool
+            bulletHitsWall = doesCollide colliders newPos size
 
         filterEntity :: [LevelEntity] -> [LevelEntity]
-        filterEntity = filter validPosition 
+        filterEntity = filter validPosition'
 
-        validPosition :: LevelEntity -> Bool
-        validPosition entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldWidth  || y < 0 || y > worldHeight
+        validPosition' :: LevelEntity -> Bool
+        validPosition' entity@(LevelEntity _ (x, y) _ _) = not $ x < 0 || x > worldWidth || y < 0 || y > worldHeight
 
-        newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (1 * dx', 1 * dy')
-        (dx, dy) = (mx - x, my - y)
-        f = sqrt (dx ** 2 + dy ** 2)
-        (dx', dy') = (dx / f, dy / f)
-
-    --
-    -- Move this to some player movement code function or so...
-    --
-    gravity = 10
-
-    newPlayer
-      -- Change state to IdleState when the player hasn't moved.
-      | newPlayerPosition == (x, y) = pl {playerState = IdleState, playerVelocity = newVelocity}
-      | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState, playerVelocity = newVelocity}
-    playerSize = (16, 16)
-
-    velocityY = tmp + gravity
-      where
-        tmp
-          | onGround && jumpKeyDown = -300
-          | canClimb && jumpKeyDown = -100
-          | onGround = 0
-          | not onGround && not canJumpHigher = 0
-          | otherwise = vy
-
-        jumpKeyDown = isKeyDown i (Char 'w') || isKeyDown i (SpecialKey KeySpace)
-
-    velocityX
-      | isKeyDown i (Char 'a') = max (-100) vxl
-      | isKeyDown i (Char 'd') = min 100 vxr
-      | otherwise = 0
-      where
-        vxl
-          | vx > -25 = -25
-          | otherwise = (abs vx ** 1.05) * (-1)
-        vxr
-          | vx < 25 = 25
-          | otherwise = vx ** 1.05
-
-    newVelocity = (velocityX, velocityY)
-
-    -- newPlayerX = x + (velocityX * d)
-    -- newPlayerY = y + (velocityY + gravity * d)
-
-    newPlayerPosition = (newPlayerX, newPlayerY)
-      where
-        -- Finds the best move we can do. Kinda brute-force, but hey it works.
-        newPlayerX =
-          fromMaybe x $
-            find validMoveX $
-              map (\z -> x + (velocityX * z)) [d, d / 2, d / 3, d / 4]
-
-        newPlayerY =
-          fromMaybe y $
-            find validMoveY $
-              map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
-
-    validMoveX z = validMove (z - 8, y - 4) playerSize
-    validMoveY z = validMove (x - 8, z - 4) playerSize
-
-    collisionObjects :: [LevelObject]
-    collisionObjects = filter ((==) "Collision" . objectName) lvlObjs
-
-    validMove :: Vec2 -> Vec2 -> Bool
-    validMove pos@(x, y) size@(w, h)
-      | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = False
-      | otherwise = not $ any (intersects pos size) collisionObjects
-
-    -- Don't question it.
-    onGroundMagicNumber = 2
-
-    canClimb :: Bool
-    canClimb =
-      not (validMove (x - 10, y - 4 + onGroundMagicNumber) playerSize)
-        || not (validMove (x - 6, y - 4 + onGroundMagicNumber) playerSize)
-
-    onGround :: Bool
-    onGround = not $ validMoveY (y + onGroundMagicNumber)
-
-    canJumpHigher :: Bool
-    canJumpHigher = validMoveY (y - 1.2)
-
----
----
----
+        newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (5 * dx', 5 * dy')
+          where
+            (dx, dy) = (mx - x, my - y)
+            f = sqrt (dx ** 2 + dy ** 2)
+            (dx', dy') = (dx / f, dy / f)

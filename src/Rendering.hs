@@ -104,7 +104,7 @@ renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
       where
         -- Number of visible items in the menu.
         visibleItemCount = 9
-        -- The middle item, zero indexed 
+        -- The middle item, zero indexed
         midPoint = visibleItemCount `div` 2
         -- max items we can drop without showing empty slots at the end
         maxDropCount = max 0 (length xs - visibleItemCount)
@@ -219,4 +219,12 @@ renderEntities :: Assets -> [LevelEntity] -> Picture
 renderEntities a = pictures . map renderEntity
   where
     renderEntity :: LevelEntity -> Picture
-    renderEntity x = setPos (entityPosition x) $ getImageAsset a "BulletTemp"
+    renderEntity x = setPos (entityPosition x) $ getEntityPicture (entityType x)
+
+    getEntityPicture :: EntityType -> Picture
+    getEntityPicture (Bullet _) = getImageAsset a "BulletTemp"
+    getEntityPicture (ExplosionEntity totalLifetime lifetime) = playerBulletImpact (fxSheet a) !! frame
+      where
+        -- frame = min 2 $ dbg "test" $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3 - 1
+        frame = min 2 $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3
+    getEntityPicture _ = renderDbgString red "entity not implemented"

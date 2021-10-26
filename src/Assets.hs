@@ -23,8 +23,9 @@ loadAssets f = do
 
   -- Load character sheets
   playerCharacterSheet <- loadPlayerCharacterSheet (f </> "PlayerCharacterSheet.png")
+  fxCharacterSheet <- loadFxCharacterSheet (f </> "FxSheet.png")
 
-  return $ dbg "Loaded assets" $ Assets assets playerCharacterSheet
+  return $ dbg "Loaded assets" $ Assets assets playerCharacterSheet fxCharacterSheet
   where
     isAssetFile = isSuffixOf "png"
 
@@ -61,8 +62,24 @@ loadPlayerCharacterSheet f = do
         playerWalkRight = map (`f` 53) [1, 37 .. 253]
         playerWalkLeft = map (`f` 79) [1, 37 .. 253]
 
+loadFxCharacterSheet :: FilePath -> IO FxSheet
+loadFxCharacterSheet f = do
+  x <- readImage f
+  case x of
+    Left err -> error err
+    Right dynImg ->
+      return $
+        FxSheet
+          playerBulletImpact
+      where
+        img = convertRGBA8 dynImg
+        f :: Int -> Int -> Int -> Int -> Picture
+        f x y w h = fromImageRGBA8 $ crop x y w h img
+
+        playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
+
 getImageAsset :: Assets -> String -> Picture
-getImageAsset (Assets images _) s = case lookup s images of
+getImageAsset a s = case lookup s (images a) of
   Just p -> p
   Nothing -> error $ "Image asset '" ++ s ++ "' does not exist."
 

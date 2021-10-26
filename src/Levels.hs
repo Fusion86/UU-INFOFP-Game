@@ -1,5 +1,6 @@
 module Levels where
 
+import Collision
 import Common
 import Coordinates
 import Data.ByteString (ByteString)
