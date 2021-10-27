@@ -4,6 +4,7 @@ import Assets
 import Colors
 import Common
 import Coordinates
+import Coordinates (menuHeight)
 import Data.Map (lookup)
 import Data.Text (pack)
 import Data.Word (Word8)
@@ -17,6 +18,7 @@ import Graphics.Gloss
     rectangleSolid,
     rgbaOfColor,
     scale,
+    translate,
     violet,
   )
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
@@ -26,13 +28,22 @@ import SDL.Font (Font, solid)
 import SDL.Vect (V4 (..))
 import Prelude hiding (lookup)
 
+renderString :: Font -> Color -> String -> IO Picture
+renderString = renderString' OriginTopLeft
+
+renderCenterString :: Font -> Color -> String -> IO Picture
+renderCenterString = renderString' OriginCenter
+
 -- | Render a string with given font and color. The origin is the middle of the string.
 -- Does not cache, and maybe it leaks memory idk.
-renderString :: Font -> Color -> String -> IO Picture
-renderString f c str = do
+renderString' :: OriginPoint -> Font -> Color -> String -> IO Picture
+renderString' o f c str = do
   surface <- solid f (colorCvt c) (pack str)
-  ((dw, dh), bg) <- bitmapOfSurface NoCache surface
-  return bg
+  ((w, h), txt) <- bitmapOfSurface NoCache surface
+  let pic = case o of
+        OriginTopLeft -> translate (w / 2) (h / (-2)) txt
+        OriginCenter -> txt
+  return pic
   where
     colorCvt :: Color -> V4 Word8
     colorCvt c =
@@ -42,14 +53,16 @@ renderString f c str = do
 renderWorldScaled :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorldScaled a f t l w = do
   world <- renderWorld a f t l w
-  return $ scale worldScale worldScale world
+  -- TODO: Maybe use getScreenSize to automatically determine the viewScale?
+  -- This also requires changes to the viewWidth and viewHeight functions.
+  return $ scale viewScale viewScale world
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
 renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   -- TODO: Maybe use caching?
-  gameTxt <- renderString f red "Game"
-  subTxt <- renderString f white "UU-INFOFP"
+  gameTxt <- renderCenterString f red "Game"
+  subTxt <- renderCenterString f white "UU-INFOFP"
   menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Quit"]
   return $
     pictures
@@ -59,13 +72,15 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
         renderList (240, 188) 12 menuTxts
       ]
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
-  selectLevelTxt <- renderString f white "Select a level"
+  selectLevelTxt <- renderCenterString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
   let (bg, fg) = renderLevel 0 a t selectedLevel
+  hud <- renderHud 0 a f initPlayer
   return $
     pictures
       [ bg,
         fg,
+        hud,
         setPos (240, 44) selectLevelTxt,
         renderList (240, 88) 12 levelTxts
       ]
@@ -87,7 +102,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
         renderCursor a w
       ]
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
-  pausedTxt <- renderString f white "Game Paused"
+  pausedTxt <- renderCenterString f white "Game Paused"
   menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
   return $
     pictures
@@ -124,9 +139,9 @@ renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
       -- Skip items that aren't in the visible item range (scroll view).
       | currentIndex `notElem` visibleItemRange = rest
       -- If the item is the selected item highlight it red.
-      | currentIndex == selectedIndex = renderString font red x : rest
+      | currentIndex == selectedIndex = renderCenterString font red x : rest
       -- Otherwise just render it the default color (white for now).
-      | otherwise = renderString font white x : rest
+      | otherwise = renderCenterString font white x : rest
       where
         rest = helper (currentIndex + 1) xs
 
@@ -143,22 +158,26 @@ renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
 renderLevel ft a tileSet (Level name background foreground layers objects) =
   (renderedBackground, renderedForeground)
   where
+    -- Hacky offset because our pre-rendered images do not contain empty space for the menu.
+    offset = translate 0 (menuHeight / 2)
+
+    renderLayer :: TileLayer -> [Picture]
+    renderLayer = renderTileGrid ft tileSet . tileGrid
+
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
-      | Just bgImage <- background = pictures $ getImageAsset a bgImage : rest
+      | Just bgImage <- background = pictures $ offset (getImageAsset a bgImage) : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer bgLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
     renderedForeground
-      | Just fgImage <- foreground = pictures $ getImageAsset a fgImage : rest
+      | Just fgImage <- foreground = pictures $ offset (getImageAsset a fgImage) : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer fgLayers
-
-    renderLayer = renderTileGrid ft tileSet . tileGrid
 
 renderTileGrid :: Float -> TileSet -> TileGrid -> [Picture]
 renderTileGrid ft _ [] = []
@@ -255,16 +274,20 @@ renderEnemies ft a = pictures . map renderEnemy
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture
 renderHud pt a f pl = do
   -- TODO: Use map for this
+  hpTxt <- renderString f white "HP: 100/100"
   wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
   wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
   wpn3Txt <- renderString f (getColor Shotgun) "3. Shotgun"
   wpn4Txt <- renderString f (getColor RocketLauncher) "4. Rockets"
   return $
     pictures
-      [ setPos (40, 311) wpn1Txt,
-        setPos (140, 311) wpn2Txt,
-        setPos (240, 311) wpn3Txt,
-        setPos (340, 311) wpn4Txt
+      [ getImageAsset a "HUDFrame",
+        -- Text rendering is not pixel perfect, so these numbers differ a bit from the PSD=
+        setPos (9, 318) hpTxt,
+        setPos (8, 333) wpn1Txt,
+        setPos (9, 348) wpn2Txt,
+        setPos (161, 333) wpn3Txt,
+        setPos (161, 348) wpn4Txt
       ]
   where
     selectedWeapon = playerSelectedWeapon pl

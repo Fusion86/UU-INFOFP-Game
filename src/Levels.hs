@@ -150,7 +150,7 @@ tilesToTileGrid = helper (0, 0)
     helper _ [] = []
     helper (x, y) lst@(tile : tiles)
       -- If end of row, go to next row.
-      | x >= worldWidth = helper (0, y + 8) lst
+      | x >= gameWidth = helper (0, y + 8) lst
       -- If not a null tile
       | tile /= 0 = ((x, y), tile) : helper (x + 8, y) tiles
       | otherwise = helper (x + 8, y) tiles

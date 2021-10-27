@@ -58,4 +58,5 @@ stack --profile run --rts-options -p
 - #haskell on irc.libera.chat
 - [Space War Man: platform shmup set](https://opengameart.org/content/space-war-man-platform-shmup-set)
 - [Denzi explosion for Space War Man](https://opengameart.org/content/denzi-explosion-for-space-war-man)
+- [Cethiel's Desert Redux as a 16-bit space background](https://opengameart.org/content/cethiels-desert-redux-as-a-16-bit-space-background)
 - [Sci-fi User Interface Elements](https://opengameart.org/content/sci-fi-user-interface-elements)

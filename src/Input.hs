@@ -36,6 +36,6 @@ handleInput (EventKey k Down _ _) w
 handleInput (EventKey k Up _ _) w = removeKey k w
 -- Mouse move event
 handleInput (EventMotion p) w@(World _ i) =
-  w {input = i {pointer = glossToWorld (worldWidth * worldScale, worldHeight * worldScale) p}}
+  w {input = i {pointer = glossToView (viewWidth, viewHeight) p}}
 -- Default, ignore event
 handleInput e w = w

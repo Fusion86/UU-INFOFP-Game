@@ -28,7 +28,7 @@ data Scene
   = IntroScene {displayTimer :: Float}
   | MenuScene
       { menuType :: MenuType,
-        -- | The parent scene, this is the Scene which will be show when the player presses Esc to go back.
+        -- | The parent scene, this is the Scene which will be shown when the player presses Esc to go back.
         -- E.g. to unpause the game or to go to a parent menu.
         parentScene :: Maybe Scene,
         -- | Index of the selected menu item. Has to be an Int because the range is not known at compile time.
@@ -52,7 +52,7 @@ data Input = Input
     keys :: S.Set Key,
     -- | Input events. Each key press corresponds to one event, which also means that multiple key presses produce multiple events.
     events :: [InputEvent],
-    -- | The location of the mouse pointer, normalized to our worldWidth and worldHeight.
+    -- | The location of the mouse pointer, normalized to our gameWidth and gameHeight.
     pointer :: Vec2
   }
   deriving (Show)
@@ -190,6 +190,8 @@ data FxSheet = FxSheet
   { playerBulletImpact :: [Picture]
   }
   deriving (Show)
+
+data OriginPoint = OriginTopLeft | OriginCenter deriving (Show, Eq)
 
 initWorld :: World
 initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))

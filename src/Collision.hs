@@ -20,5 +20,5 @@ enemyCollisionObjects = filter (f . objectName)
 
 doesCollide :: [LevelObject] -> Vec2 -> Vec2 -> Bool
 doesCollide colliders pos@(x, y) size@(w, h)
-  | x < 0 || y < 0 || x + w > worldWidth || y + h > worldHeight = True
+  | x < 0 || y < 0 || x + w > gameWidth || y + h > gameHeight = True
   | otherwise = any (intersects pos size) colliders

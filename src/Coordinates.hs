@@ -3,19 +3,28 @@ module Coordinates where
 import Graphics.Gloss
 import Model
 
-worldScale :: Float
-worldScale = 3
+gameWidth :: Float
+gameWidth = 480
 
-worldWidth :: Float
-worldWidth = 480
+gameHeight :: Float
+gameHeight = 320
 
-worldHeight :: Float
-worldHeight = 320
+menuHeight :: Float
+menuHeight = 40
+
+viewScale :: Float
+viewScale = 3 -- For 1440p displays you want to set this to 4
+
+viewWidth :: Float
+viewWidth = gameWidth * viewScale
+
+viewHeight :: Float
+viewHeight = (menuHeight + gameHeight) * viewScale
 
 setPos :: Vec2 -> Picture -> Picture
-setPos (x, y) = translate (x - worldWidth / 2) (worldHeight / 2 - y)
+setPos (x, y) = translate (x - gameWidth / 2) ((gameHeight + menuHeight) / 2 - y)
 
-glossToWorld :: Vec2 -> Vec2 -> Vec2
-glossToWorld (mx, my) (x, y) =
-  let scaleX = mx / worldWidth; scaleY = my / worldHeight
+glossToView :: Vec2 -> Vec2 -> Vec2
+glossToView (mx, my) (x, y) =
+  let scaleX = mx / gameWidth; scaleY = my / (gameHeight + menuHeight)
    in ((x + mx / 2) / scaleX, (my / 2 - y) / scaleY)

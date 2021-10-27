@@ -15,9 +15,7 @@ import TileSet
 import World
 
 createWindow :: Display
-createWindow =
-  let w = worldWidth * worldScale; h = worldHeight * worldScale
-   in InWindow "UU-INFOFP-Game" (round w, round h) (100, 100)
+createWindow = InWindow "UU-INFOFP-Game" (round viewWidth, round viewHeight) (100, 100)
 
 main :: IO ()
 main = do
