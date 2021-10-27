@@ -92,8 +92,9 @@ data Player = Player
 
 data WeaponType
   = AssaultRifle
-  | RocketLauncher
+  | PeaShooter
   | Shotgun
+  | RocketLauncher
   deriving (Show, Eq)
 
 data Level = Level
@@ -206,7 +207,7 @@ createLevelInstance :: Level -> LevelInstance
 createLevelInstance l = LevelInstance l [] enemies
   where
     -- Spawn a enemy for each EnemySpawner
-    -- TODO: Ignores enemy type
+    -- TODO: This ignores enemy type
     enemies = map newEnemy $ filter ((==) "EnemySpawner" . objectName) (levelObjects l)
 
     newEnemy :: LevelObject -> EnemyInstance

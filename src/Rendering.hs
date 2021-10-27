@@ -1,4 +1,4 @@
-  module Rendering where
+module Rendering where
 
 import Assets
 import Colors
@@ -73,6 +73,7 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
     selectedLevel = l !! selectedItem
 renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
   let (bg, fg) = renderLevel pt a t (level levelInstance)
+  hud <- renderHud pt a f p
   return $
     pictures
       [ bg,
@@ -82,6 +83,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
         -- render enemies
         renderPlayer pt a w p,
         fg,
+        hud,
         renderCursor a w
       ]
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
@@ -249,3 +251,24 @@ renderEnemies ft a = pictures . map renderEnemy
             frame :: Int
             frame = floor ((ft - fromIntegral (floor ft)) * 6) `mod` 3 -- Length of crabWalkRight and crabWalkLeft
         getEnemyPicture _ = renderDbgString red "entity not implemented"
+
+renderHud :: Float -> Assets -> Font -> Player -> IO Picture
+renderHud pt a f pl = do
+  -- TODO: Use map for this
+  wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
+  wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
+  wpn3Txt <- renderString f (getColor Shotgun) "3. Shotgun"
+  wpn4Txt <- renderString f (getColor RocketLauncher) "4. Rockets"
+  return $
+    pictures
+      [ setPos (40, 311) wpn1Txt,
+        setPos (140, 311) wpn2Txt,
+        setPos (240, 311) wpn3Txt,
+        setPos (340, 311) wpn4Txt
+      ]
+  where
+    selectedWeapon = playerSelectedWeapon pl
+
+    getColor wpn
+      | wpn == selectedWeapon = red
+      | otherwise = white

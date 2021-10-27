@@ -12,8 +12,8 @@ import Model
 updatePlayer :: Float -> World -> Scene -> Player
 updatePlayer d w s
   -- Change state to IdleState when the player hasn't moved.
-  | newPlayerPosition == (x, y) = pl {playerState = IdleState, playerVelocity = newVelocity}
-  | otherwise = pl {playerPosition = newPlayerPosition, playerState = MovingState, playerVelocity = newVelocity}
+  | newPlayerPosition == (x, y) = newPlBase {playerState = IdleState}
+  | otherwise = newPlBase {playerPosition = newPlayerPosition, playerState = MovingState}
   where
     i = input w
     pl = player $ scene w
@@ -25,8 +25,19 @@ updatePlayer d w s
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level lvlInst
 
+    -- New player base, each update cycle these are the properties that always update, unrelated to player position etc.
+    newPlBase = pl {playerVelocity = newVelocity, playerSelectedWeapon = selectedWeapon}
+
     -- Constants
     playerSize = (12, 16)
+
+    selectedWeapon
+      | isKeyDown i (Char '1') = AssaultRifle
+      | isKeyDown i (Char '2') = PeaShooter
+      | isKeyDown i (Char '3') = Shotgun
+      | isKeyDown i (Char '4') = RocketLauncher
+      -- Unchanged if no key press
+      | otherwise = playerSelectedWeapon pl
 
     velocityY = tmp + gravity
       where
