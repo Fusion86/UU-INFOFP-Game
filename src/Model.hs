@@ -158,12 +158,15 @@ data EntityType
   | ExplosionEntity Float Float
   deriving (Show, Eq)
 
+type LevelObjectProperties = Map String String
+
 -- Might not be the best name for it, but in our map editor the same name is used.
 data LevelObject = LevelObject
   { -- | The player will spawn/respawn in this zone.
     objectName :: String,
     objectPosition :: Vec2,
-    objectSize :: Vec2
+    objectSize :: Vec2,
+    objectProperties :: LevelObjectProperties
   }
   deriving (Show)
 
@@ -200,8 +203,14 @@ initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
 createLevelInstance :: Level -> LevelInstance
-createLevelInstance l =
-  LevelInstance l [] [EnemyInstance CrabEnemy 100 (30, 30) (100, 0) IdleState]
+createLevelInstance l = LevelInstance l [] enemies
+  where
+    -- Spawn a enemy for each EnemySpawner
+    -- TODO: Ignores enemy type
+    enemies = map newEnemy $ filter ((==) "EnemySpawner" . objectName) (levelObjects l)
+
+    newEnemy :: LevelObject -> EnemyInstance
+    newEnemy x = EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
 
 createGameplay :: Level -> Player -> Scene
 createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0

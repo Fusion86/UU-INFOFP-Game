@@ -6,6 +6,7 @@ import Coordinates
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.List (sort)
+import Data.Map (empty, fromList)
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Text (Text, pack, splitOn, unpack)
 import qualified Data.Text as T
@@ -20,8 +21,7 @@ loadLevels f = do
   maybeLevels <- mapM loadLevel (sort files)
   let levels = catMaybes maybeLevels
   return $
-    trace ("Loaded " ++ show (length levels) ++ " levels.") $
-      levels
+    trace ("Loaded " ++ show (length levels) ++ " levels.") levels
 
 loadLevel :: FilePath -> IO (Maybe Level)
 loadLevel f = do
@@ -66,13 +66,30 @@ loadLevelFromXml xml
         parseLevelObject x
           | Just objectName <- findAttr (simpleName "name") x,
             Just posX <- findAttr (simpleName "x") x,
-            Just posY <- findAttr (simpleName "y") x,
-            Just w <- findAttr (simpleName "width") x,
-            Just h <- findAttr (simpleName "height") x =
-            Just $ LevelObject objectName (readFloat posX, readFloat posY) (readFloat w, readFloat h)
+            Just posY <- findAttr (simpleName "y") x =
+            Just $ LevelObject objectName (readFloat posX, readFloat posY) (width, height) levelObjectProperties
           | otherwise = Nothing
           where
             readFloat y = read y :: Float
+
+            -- Width and height are optional properties, when they are not found they will be zero.
+            width
+              | Just str <- findAttr (simpleName "width") x = readFloat str
+              | otherwise = 0
+            height
+              | Just str <- findAttr (simpleName "height") x = readFloat str
+              | otherwise = 0
+
+            levelObjectProperties :: LevelObjectProperties
+            levelObjectProperties
+              | Just props <- findElement (simpleName "properties") x = fromList $ mapMaybe f (elChildren props)
+              | otherwise = empty
+              where
+                f :: Element -> Maybe (String, String)
+                f x = do
+                  name <- findAttr (simpleName "name") x
+                  value <- findAttr (simpleName "value") x
+                  return (name, value)
 
     levelName :: Maybe String
     levelName = getPropValueByName mapProps "Name"

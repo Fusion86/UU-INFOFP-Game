@@ -26,7 +26,7 @@ updatePlayer d w s
     lvlObjs = levelObjects $ level lvlInst
 
     -- Constants
-    playerSize = (16, 16)
+    playerSize = (12, 16)
 
     velocityY = tmp + gravity
       where
@@ -46,7 +46,7 @@ updatePlayer d w s
       where
         vxl
           | vx > -25 = -25
-          | otherwise = -(abs vx ** 1.05)
+          | otherwise = - (abs vx ** 1.05)
         vxr
           | vx < 25 = 25
           | otherwise = vx ** 1.05
@@ -69,7 +69,7 @@ updatePlayer d w s
     -- -8 and -4 to move the origin point from the center to the top left.
     -- -8 = playerSize X / 2
     -- -4 = playerSize Y / 2
-    validMove pos@(x, y) size = not $ doesCollide (collisionObjects lvlObjs) (x - 8, y - 4) size
+    validMove pos@(x, y) size = not $ doesCollide (collisionObjects lvlObjs) (x - 6, y - 4) size
     validMoveX z = validMove (z, y) playerSize
     validMoveY z = validMove (x, z) playerSize
 

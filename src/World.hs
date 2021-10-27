@@ -154,7 +154,7 @@ updateScene _ d w@(World s@Gameplay {} _)
               | onGround && not (validMoveX (x + 10)) = vx - acceleration
               | onGround && not (validMoveX (x - 10)) = vx + acceleration
               | vx > 0 = min speed $ vx + acceleration
-              | otherwise = max (-speed) $ vx - acceleration
+              | otherwise = max (- speed) $ vx - acceleration
 
             newPosition = (newX, newY)
               where
@@ -168,7 +168,7 @@ updateScene _ d w@(World s@Gameplay {} _)
                     find validMoveY $
                       map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
 
-            validMove pos@(x, y) size = not $ doesCollide (collisionObjects lvlObjs) (x - 7, y - 7) size
+            validMove pos@(x, y) size = not $ doesCollide (enemyCollisionObjects lvlObjs) (x - 7, y - 7) size
             validMoveX z = validMove (z, y) size
             validMoveY z = validMove (x, z) size
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="8" tileheight="8" infinite="0" nextlayerid="3" nextobjectid="1">
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="60" height="40" tilewidth="8" tileheight="8" infinite="0" nextlayerid="4" nextobjectid="29">
  <properties>
+  <property name="Foreground" value="TestLevel4Fg"/>
   <property name="Name" value="Test Level 4"/>
  </properties>
  <tileset firstgid="1" source="../../design/tiled/TileSet.tsx"/>
@@ -92,4 +93,52 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
+ <objectgroup id="3" name="Object Layer 1">
+  <object id="1" name="Collision" x="16" y="56" width="136" height="24"/>
+  <object id="3" name="Collision" x="344" y="56" width="120" height="24"/>
+  <object id="4" name="Collision" x="264" y="200" width="184" height="24"/>
+  <object id="5" name="Collision" x="160" y="200" width="72" height="32"/>
+  <object id="6" name="Collision" x="120" y="120" width="200" height="24"/>
+  <object id="7" name="Collision" x="152" y="144" width="136" height="8"/>
+  <object id="8" name="Collision" x="192" y="152" width="72" height="8"/>
+  <object id="9" name="Collision" x="0" y="0" width="16" height="320"/>
+  <object id="10" name="Collision" x="16" y="208" width="96" height="24"/>
+  <object id="11" name="Collision" x="16" y="264" width="104" height="56"/>
+  <object id="12" name="Collision" x="152" y="264" width="88" height="56"/>
+  <object id="13" name="Collision" x="208" y="232" width="24" height="32"/>
+  <object id="14" name="Collision" x="240" y="264" width="240" height="56"/>
+  <object id="15" name="Collision" x="464" y="0" width="16" height="264"/>
+  <object id="16" name="Collision" x="16" y="0" width="448" height="16"/>
+  <object id="17" name="EnemySpawner" x="40" y="40">
+   <properties>
+    <property name="Type" value="Crab"/>
+   </properties>
+  </object>
+  <object id="18" name="EnemySpawner" x="352" y="184">
+   <properties>
+    <property name="Type" value="Crab"/>
+   </properties>
+  </object>
+  <object id="19" name="EnemySpawner" x="336" y="248">
+   <properties>
+    <property name="Type" value="Crab"/>
+   </properties>
+  </object>
+  <object id="20" name="EnemySpawner" x="224" y="104">
+   <properties>
+    <property name="Type" value="Crab"/>
+   </properties>
+  </object>
+  <object id="21" name="EnemySpawner" x="408" y="40">
+   <properties>
+    <property name="Type" value="Crab"/>
+   </properties>
+  </object>
+  <object id="23" name="EnemyCollision" x="144" y="16" width="8" height="40"/>
+  <object id="24" name="EnemyCollision" x="344" y="16" width="8" height="40"/>
+  <object id="25" name="EnemyCollision" x="264" y="160" width="8" height="40"/>
+  <object id="26" name="EnemyCollision" x="440" y="160" width="8" height="40"/>
+  <object id="27" name="EnemyCollision" x="120" y="80" width="8" height="40"/>
+  <object id="28" name="EnemyCollision" x="312" y="80" width="8" height="40"/>
+ </objectgroup>
 </map>
