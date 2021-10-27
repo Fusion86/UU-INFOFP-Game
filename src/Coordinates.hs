@@ -13,7 +13,7 @@ menuHeight :: Float
 menuHeight = 40
 
 viewScale :: Float
-viewScale = 3 -- For 1440p displays you want to set this to 4
+viewScale = 2 -- For 1440p displays you want to set this to 3
 
 viewWidth :: Float
 viewWidth = gameWidth * viewScale
