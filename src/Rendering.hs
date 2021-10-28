@@ -4,7 +4,6 @@ import Assets
 import Colors
 import Common
 import Coordinates
-import Coordinates (menuHeight)
 import Data.Map (lookup)
 import Data.Text (pack)
 import Data.Word (Word8)
@@ -67,9 +66,9 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   return $
     pictures
       [ getImageAsset a "MainMenuBg",
-        setPos (240, 120) $ scale 4 4 gameTxt,
-        setPos (248, 96) subTxt,
-        renderList (240, 188) 12 menuTxts
+        setPos (288, 120) $ scale 4 4 gameTxt,
+        setPos (296, 96) subTxt,
+        renderList (288, 188) 12 menuTxts
       ]
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderCenterString f white "Select a level"
@@ -81,8 +80,8 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
       [ bg,
         fg,
         hud,
-        setPos (240, 44) selectLevelTxt,
-        renderList (240, 88) 12 levelTxts
+        setPos (288, 44) selectLevelTxt,
+        renderList (288, 88) 12 levelTxts
       ]
   where
     selectedLevel = l !! selectedItem
@@ -106,12 +105,12 @@ renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
   menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
   return $
     pictures
-      [ setPos (240, 96) pausedTxt,
-        renderList (240, 188) 12 menuTxts
+      [ setPos (288, 96) pausedTxt,
+        renderList (288, 188) 12 menuTxts
       ]
 renderWorld _ f _ _ _ = do
   str <- renderString f red "Scene not implemented"
-  return $ setPos (240, 160) str
+  return $ setPos (288, 160) str
 
 renderMenuItems :: Font -> Int -> [String] -> IO [Picture]
 renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
@@ -158,23 +157,20 @@ renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
 renderLevel ft a tileSet (Level name background foreground layers objects) =
   (renderedBackground, renderedForeground)
   where
-    -- Hacky offset because our pre-rendered images do not contain empty space for the menu.
-    offset = translate 0 (menuHeight / 2)
-
     renderLayer :: TileLayer -> [Picture]
     renderLayer = renderTileGrid ft tileSet . tileGrid
 
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
-      | Just bgImage <- background = pictures $ offset (getImageAsset a bgImage) : rest
+      | Just bgImage <- background = pictures $ getImageAsset a bgImage : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer bgLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
     renderedForeground
-      | Just fgImage <- foreground = pictures $ offset (getImageAsset a fgImage) : rest
+      | Just fgImage <- foreground = pictures $ getImageAsset a fgImage : rest
       | otherwise = pictures rest
       where
         rest = concatMap renderLayer fgLayers
@@ -283,11 +279,11 @@ renderHud pt a f pl = do
     pictures
       [ getImageAsset a "HUDFrame",
         -- Text rendering is not pixel perfect, so these numbers differ a bit from the PSD=
-        setPos (9, 318) hpTxt,
-        setPos (8, 333) wpn1Txt,
-        setPos (9, 348) wpn2Txt,
-        setPos (161, 333) wpn3Txt,
-        setPos (161, 348) wpn4Txt
+        setPos (9, 292) hpTxt,
+        setPos (8, 307) wpn1Txt,
+        setPos (9, 322) wpn2Txt,
+        setPos (161, 307) wpn3Txt,
+        setPos (161, 322) wpn4Txt
       ]
   where
     selectedWeapon = playerSelectedWeapon pl

@@ -15,7 +15,7 @@ import TileSet
 import World
 
 createWindow :: Display
-createWindow = InWindow "UU-INFOFP-Game" (round viewWidth, round viewHeight) (100, 100)
+createWindow = InWindow "UU-INFOFP-Game" (round viewWidth, round viewHeight) (0, 0)
 
 main :: IO ()
 main = do
