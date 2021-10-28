@@ -17,6 +17,7 @@ import Rendering
 import SDL.Font (Font)
 import System.Exit (exitSuccess)
 import System.IO.Unsafe (unsafePerformIO)
+import Weapons
 
 updateWorld :: [Level] -> Float -> World -> World
 updateWorld l d w@(World s i) =
@@ -73,7 +74,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
     EndOfLevel -> s
 -- Gameplay
 -- NOTE: "lens/optics provide a language to do this pattern matching." -- dminuoso
-updateScene _ d w@(World s@Gameplay {} _)
+updateScene _ d' w@(World s@Gameplay {} _)
   | MenuBack `elem` events i = createMenu PauseMenu (Just s)
   | otherwise = s {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
   where
@@ -81,7 +82,7 @@ updateScene _ d w@(World s@Gameplay {} _)
     pt = playTime $ scene w
     pl = player $ scene w
     (mx, my) = pointer $ input w
-    (x, y) = playerPosition pl
+    (x, y) = center pl
     (vx, vy) = playerVelocity pl
     state = playerState pl
     lvlInst = levelInstance s
@@ -90,6 +91,10 @@ updateScene _ d w@(World s@Gameplay {} _)
     shootCooldown = playerShootCooldown pl
     selectedWeapon = playerSelectedWeapon pl
     colliders = collisionObjects lvlObjs
+
+    d
+      | debugMode i = d' * timeMultiplier i
+      | otherwise = d'
 
     newPlayer = (updatePlayer d w s) {playerShootCooldown = newShootCooldown}
 
@@ -108,9 +113,9 @@ updateScene _ d w@(World s@Gameplay {} _)
           | shouldShootNewBullet = newBullet : lvlEntities
           | otherwise = lvlEntities
           where
-            newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (5 * dx', 5 * dy')
+            newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (dx', dy')
             (dx, dy) = (mx - x, my - y)
-            f = sqrt (dx ** 2 + dy ** 2)
+            f = sqrt (dx ** 2 + dy ** 2) / weaponTravelSpeed selectedWeapon
             (dx', dy') = (dx / f, dy / f)
 
         updateEntity :: LevelEntity -> Maybe LevelEntity
@@ -123,12 +128,17 @@ updateScene _ d w@(World s@Gameplay {} _)
         updateEntity entity@(LevelEntity t pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
           | bulletHitsWall = Just $ LevelEntity (ExplosionEntity 0.15 0) pos size (0, 0)
-          | otherwise = Just entity {entityPosition = newPos}
+          | otherwise = Just newBullet
           where
             newPos = (x + vx, y + vy)
+            newBullet = entity {entityPosition = newPos}
 
+            -- TODO: Sniper shoots so fast that it can go through walls.
+            -- maybe speciaal voor de sniper collision in halve stappen checken in general
+            -- hij schiet niet zo snel dus je hebt nooit veel sniper kogels -- youri
+            -- alternatively we can raytrace the bullet till it hits the wall, and only check for collision with enemies in each next frame.
             bulletHitsWall :: Bool
-            bulletHitsWall = doesCollide colliders newPos size
+            bulletHitsWall = any (intersects newBullet) colliders
 
         newLevelEnemies :: [EnemyInstance]
         newLevelEnemies = levelEnemies lvlInst
@@ -168,7 +178,7 @@ updateScene _ d w@(World s@Gameplay {} _)
                     find validMoveY $
                       map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
 
-            validMove pos@(x, y) size = not $ doesCollide (enemyCollisionObjects lvlObjs) (x - 7, y - 7) size
+            validMove pos size = not $ any (intersects (Box2D pos size)) (enemyCollisionObjects lvlObjs)
             validMoveX z = validMove (z, y) size
             validMoveY z = validMove (x, z) size
 

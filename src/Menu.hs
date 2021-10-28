@@ -13,7 +13,7 @@ menuWrapAround itemCount x
   | otherwise = x
 
 updateMenuScene :: Int -> Float -> World -> (Maybe Int, Scene)
-updateMenuScene itemCount delta w@(World s@(MenuScene t p selectedItem) i@(Input _ ev _))
+updateMenuScene itemCount delta w@(World s@(MenuScene t p selectedItem) i@Input {events = ev})
   -- If Esc is pressed and we can go back one menu, then go back.
   | MenuBack `elem` ev, Just p <- p = (Nothing, p)
   -- If enter is pressed then return the id of the selected menu.

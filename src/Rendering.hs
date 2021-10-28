@@ -11,16 +11,18 @@ import Graphics.Gloss
   ( Color,
     Picture,
     blank,
-    blue,
+    circleSolid,
     color,
+    green,
     pictures,
-    rectangleSolid,
+    rectangleWire,
     rgbaOfColor,
     scale,
     translate,
-    violet,
   )
+import Graphics.Gloss.Interface.IO.Interact (Key (SpecialKey), SpecialKey (KeyF1))
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
+import Input
 import Levels
 import Model
 import SDL.Font (Font, solid)
@@ -74,20 +76,18 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderCenterString f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
   let (bg, fg) = renderLevel 0 a t selectedLevel
-  hud <- renderHud 0 a f initPlayer
   return $
     pictures
       [ bg,
         fg,
-        hud,
         setPos (288, 44) selectLevelTxt,
         renderList (288, 88) 12 levelTxts
       ]
   where
     selectedLevel = l !! selectedItem
-renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
+renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
   let (bg, fg) = renderLevel pt a t (level levelInstance)
-  hud <- renderHud pt a f p
+  hud <- renderHud pt a f pl
   return $
     pictures
       [ bg,
@@ -95,11 +95,20 @@ renderWorld a f t _ w@(World (Gameplay levelInstance p pt) _) = do
         renderEnemies pt a (levelEnemies levelInstance),
         -- render pickups
         -- render enemies
-        renderPlayer pt a w p,
+        renderPlayer pt a w pl,
         fg,
         hud,
-        renderCursor a w
+        renderCursor a w,
+        debugOverlay
       ]
+  where
+    debugOverlay
+      | debugMode i =
+        pictures $
+          [renderDebugOverlay w, renderObjDebugOverlay pl]
+            ++ map renderObjDebugOverlay (levelEnemies levelInstance)
+            ++ map renderObjDebugOverlay (levelObjects (level levelInstance))
+      | otherwise = blank
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
   pausedTxt <- renderCenterString f white "Game Paused"
   menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
@@ -209,14 +218,15 @@ animateTile ft i
     t = round ft
 
 renderCursor :: Assets -> World -> Picture
-renderCursor a (World _ (Input _ _ p)) = setPos p $ getImageAsset a "Cursor"
+renderCursor a (World _ i) = setPos (pointer i) $ getImageAsset a "Cursor"
 
 renderPlayer :: Float -> Assets -> World -> Player -> Picture
 renderPlayer ft a w p =
-  setPos (x, y) pic
+  -- Small offset because the player bounding box is not the same size as the texture.
+  setPos (x, y - 4) pic
   where
     (mx, my) = pointer $ input w
-    (x, y) = playerPosition p
+    (x, y) = center p
     -- Direction of the mouse pointer relative to the player.
     (dx, dy) = (mx - x, my - y)
     sheet = playerSheet a
@@ -253,7 +263,7 @@ renderEnemies ft a = pictures . map renderEnemy
     sheet = enemyCharacterSheet a
 
     renderEnemy :: EnemyInstance -> Picture
-    renderEnemy x = setPos (enemyPosition x) $ getEnemyPicture (enemyType x)
+    renderEnemy x = setPos (center x) $ getEnemyPicture (enemyType x)
       where
         (vx, vy) = enemyVelocity x
 
@@ -273,7 +283,7 @@ renderHud pt a f pl = do
   hpTxt <- renderString f white "HP: 100/100"
   wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
   wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
-  wpn3Txt <- renderString f (getColor Shotgun) "3. Shotgun"
+  wpn3Txt <- renderString f (getColor SniperRifle) "3. SniperRifle"
   wpn4Txt <- renderString f (getColor RocketLauncher) "4. Rockets"
   return $
     pictures
@@ -291,3 +301,16 @@ renderHud pt a f pl = do
     getColor wpn
       | wpn == selectedWeapon = red
       | otherwise = white
+
+renderDebugOverlay :: World -> Picture
+renderDebugOverlay (World _ i) =
+  setPos (10, 10) $ renderDbgString green $ "timeMultiplier: " ++ show (timeMultiplier i)
+
+renderObjDebugOverlay :: Object2D a => a -> Picture
+renderObjDebugOverlay o = pictures [boundingBox, origin, namePic]
+  where
+    (w, h) = size o
+
+    namePic = setPos (position o) $ renderDbgString green $ name o
+    origin = setPos (position o) $ color green $ circleSolid 1
+    boundingBox = setPos (center o) $ color red $ rectangleWire w h

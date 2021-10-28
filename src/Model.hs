@@ -53,7 +53,9 @@ data Input = Input
     -- | Input events. Each key press corresponds to one event, which also means that multiple key presses produce multiple events.
     events :: [InputEvent],
     -- | The location of the mouse pointer, normalized to our gameWidth and gameHeight.
-    pointer :: Vec2
+    pointer :: Vec2,
+    debugMode :: Bool,
+    timeMultiplier :: Float
   }
   deriving (Show)
 
@@ -93,7 +95,7 @@ data Player = Player
 data WeaponType
   = AssaultRifle
   | PeaShooter
-  | Shotgun
+  | SniperRifle
   | RocketLauncher
   deriving (Show, Eq)
 
@@ -193,8 +195,72 @@ data FxSheet = FxSheet
 
 data OriginPoint = OriginTopLeft | OriginCenter deriving (Show, Eq)
 
+class Object2D a where
+  name :: a -> String
+
+  -- | Returns position of this object (origin top-left).
+  position :: a -> Vec2
+
+  -- | Returns the center of the object.
+  center :: a -> Vec2
+  center o = (x + w / 2, y + h / 2)
+    where
+      (x, y) = position o
+      (w, h) = size o
+
+  size :: a -> Vec2
+
+  intersects :: Object2D b => a -> b -> Bool
+  intersects l r = outsideWorld || intersects'
+    where
+      (x1, y1) = position l
+      (w1, h1) = size l
+      (x2, y2) = position r
+      (w2, h2) = size r
+
+      intersects' =
+        x1 < x2 + w2
+          && x1 + w1 > x2
+          && y1 < y2 + h2
+          && h1 + y1 > y2
+
+      -- Hacky way to make invisible walls around the world.
+      -- This ensures that an object can never fall through the world.
+      outsideWorld = x1 < 0 || y1 < 0 || x1 + w1 > gameWidth || y1 + h1 > gameHeight
+
+-- | Used when checking for collision between a theoretical bounding box.
+-- For example: to test whether a new player position is valid. In that case
+-- the player is not yet at a new position, but we want to test whether they could be.
+-- Using a Box2D we can use the 'intersects' function to check whether this position is valid.
+data Box2D = Box2D Vec2 Vec2
+
+instance Object2D Player where
+  name = const "Player"
+  position = playerPosition
+  size = const (12, 16)
+
+instance Object2D LevelObject where
+  name = objectName
+  position = objectPosition
+  size = objectSize
+
+instance Object2D LevelEntity where
+  name = const "Entity"
+  position = entityPosition
+  size = entitySize
+
+instance Object2D EnemyInstance where
+  name a = "Enemy " ++ show (enemyType a)
+  position = enemyPosition
+  size = enemySize . enemyType
+
+instance Object2D Box2D where
+  name = const "Box2D"
+  position (Box2D a _) = a
+  size (Box2D _ b) = b
+
 initWorld :: World
-initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0))
+initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0) False 1)
 
 initPlayer :: Player
 initPlayer = Player 100 100 50 8 empty AssaultRifle 0 (100, 100) (0, 0) IdleState
@@ -221,11 +287,26 @@ createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
     -- TODO: Set player position to the spawn position in the level.
     newPlayer = p
 
-weaponShootCooldown :: WeaponType -> Float
-weaponShootCooldown _ = 0.1
-
 enemySpeed :: EnemyType -> Float
-enemySpeed _ = 50
+enemySpeed = const 50
+
+enemySize :: EnemyType -> Vec2
+enemySize _ = (14, 14)
 
 gravity :: Float
 gravity = 10
+
+gameWidth :: Float
+gameWidth = 576 -- 8 * 72
+
+gameHeight :: Float
+gameHeight = 336 -- 8 * 42
+
+viewScale :: Float
+viewScale = 3 -- For 1440p displays you want to set this to 4
+
+viewWidth :: Float
+viewWidth = gameWidth * viewScale
+
+viewHeight :: Float
+viewHeight = gameHeight * viewScale

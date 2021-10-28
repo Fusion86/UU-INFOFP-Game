@@ -36,6 +36,7 @@ library
       Rendering
       TileSet
       Utility
+      Weapons
       World
   other-modules:
       Paths_UU_INFOFP_Game

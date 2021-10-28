@@ -29,12 +29,12 @@ updatePlayer d w s
     newPlBase = pl {playerVelocity = newVelocity, playerSelectedWeapon = selectedWeapon}
 
     -- Constants
-    playerSize = (12, 16)
+    playerSize = size pl
 
     selectedWeapon
       | isKeyDown i (Char '1') = AssaultRifle
       | isKeyDown i (Char '2') = PeaShooter
-      | isKeyDown i (Char '3') = Shotgun
+      | isKeyDown i (Char '3') = SniperRifle
       | isKeyDown i (Char '4') = RocketLauncher
       -- Unchanged if no key press
       | otherwise = playerSelectedWeapon pl
@@ -77,10 +77,7 @@ updatePlayer d w s
             find validMoveY $
               map (\z -> y + (velocityY * z)) [d, d / 2, d / 3, d / 4]
 
-    -- -8 and -4 to move the origin point from the center to the top left.
-    -- -8 = playerSize X / 2
-    -- -4 = playerSize Y / 2
-    validMove pos@(x, y) size = not $ doesCollide (collisionObjects lvlObjs) (x - 6, y - 4) size
+    validMove pos size = not $ any (intersects (Box2D pos size)) (collisionObjects lvlObjs)
     validMoveX z = validMove (z, y) playerSize
     validMoveY z = validMove (x, z) playerSize
 

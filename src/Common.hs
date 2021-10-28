@@ -32,5 +32,5 @@ safeHead a = case a of
 
 renderDbgString :: Color -> String -> Picture
 renderDbgString clr str =
-  let x = 0.1
+  let x = 0.05
    in scale x x $ color clr $ text str
