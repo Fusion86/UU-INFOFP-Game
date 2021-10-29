@@ -9,3 +9,4 @@
 
 *.tiled-session
 *.prof
+dist/
