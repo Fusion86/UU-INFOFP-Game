@@ -1,5 +1,7 @@
 # UU-INFOFP-Game
 
+[Click here to download the game.](https://s3.cerbus.nl/minio/uu-infofp-game/)
+
 ## Setup development environment (Debian & friends)
 
 ```sh
