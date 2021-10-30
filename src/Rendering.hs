@@ -247,11 +247,14 @@ renderPlayer ft a w p =
 renderEntities :: Assets -> [LevelEntity] -> Picture
 renderEntities a = pictures . map renderEntity
   where
+    fx = fxSheet a
+
     renderEntity :: LevelEntity -> Picture
     renderEntity x = setPos (center x) $ getEntityPicture (entityType x)
 
     getEntityPicture :: EntityType -> Picture
-    getEntityPicture Bullet {} = getImageAsset a "BulletTemp"
+    getEntityPicture Bullet {bulletType = PeaShooter} = playerBullets fx !! 2
+    getEntityPicture Bullet {} = playerBullets fx !! 0
     getEntityPicture (ExplosionEntity totalLifetime lifetime) = playerBulletImpact (fxSheet a) !! frame
       where
         -- frame = min 2 $ dbg "test" $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3 - 1
@@ -284,7 +287,7 @@ renderHud pt a f pl = do
   hpTxt <- renderString f white "HP: 100/100"
   wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
   wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
-  wpn3Txt <- renderString f (getColor SniperRifle) "3. SniperRifle"
+  wpn3Txt <- renderString f (getColor SniperRifle) "3. Sniper"
   wpn4Txt <- renderString f (getColor RocketLauncher) "4. Rockets"
   return $
     pictures

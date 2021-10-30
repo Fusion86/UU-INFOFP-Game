@@ -71,12 +71,14 @@ loadFxCharacterSheet f = do
     Right dynImg ->
       return $
         FxSheet
+          playerBullets
           playerBulletImpact
       where
         img = convertRGBA8 dynImg
         f :: Int -> Int -> Int -> Int -> Picture
         f x y w h = fromImageRGBA8 $ crop x y w h img
 
+        playerBullets = [f 2 2 6 6, f 12 2 6 6, f 23 3 4 4]
         playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
 
 loadEnemyCharacterSheet :: FilePath -> IO EnemyCharacterSheet

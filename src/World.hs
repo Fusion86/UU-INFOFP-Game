@@ -113,7 +113,7 @@ updateScene _ d' w@(World s@Gameplay {} _)
           | shouldShootNewBullet = newBullet : lvlEntities
           | otherwise = lvlEntities
           where
-            newBullet = LevelEntity (Bullet AssaultRifle (x, y) bulletTravelDist) (x, y) (6,6) (dx * speed, dy * speed)
+            newBullet = LevelEntity (Bullet selectedWeapon (x, y) bulletTravelDist) (x, y) (6,6) (dx * speed, dy * speed)
             (totalDistX, totalDistY) = (mx - x, my - y)
             f = sqrt (totalDistX ** 2 + totalDistY ** 2)
             (dx, dy) = (totalDistX / f, totalDistY / f)

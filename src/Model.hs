@@ -193,7 +193,8 @@ data EnemyCharacterSheet = EnemyCharacterSheet
   deriving (Show)
 
 data FxSheet = FxSheet
-  { playerBulletImpact :: [Picture]
+  { playerBullets :: [Picture],
+    playerBulletImpact :: [Picture]
   }
   deriving (Show)
 
