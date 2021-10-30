@@ -1,6 +1,6 @@
 # UU-INFOFP-Game
 
-[Click here to download the game.](https://s3.cerbus.nl/minio/uu-infofp-game/)
+[Click here to browse all build artifacts.](https://s3.cerbus.nl/minio/uu-infofp-game/)
 
 ## Setup development environment (Debian & friends)
 
