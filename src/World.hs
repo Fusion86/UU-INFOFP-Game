@@ -113,32 +113,53 @@ updateScene _ d' w@(World s@Gameplay {} _)
           | shouldShootNewBullet = newBullet : lvlEntities
           | otherwise = lvlEntities
           where
-            newBullet = LevelEntity (Bullet AssaultRifle) (x, y) (0, 0) (dx', dy')
-            (dx, dy) = (mx - x, my - y)
-            f = sqrt (dx ** 2 + dy ** 2) / weaponTravelSpeed selectedWeapon
-            (dx', dy') = (dx / f, dy / f)
+            newBullet = LevelEntity (Bullet AssaultRifle (x, y) bulletTravelDist) (x, y) (6,6) (dx * speed, dy * speed)
+            (totalDistX, totalDistY) = (mx - x, my - y)
+            f = sqrt (totalDistX ** 2 + totalDistY ** 2)
+            (dx, dy) = (totalDistX / f, totalDistY / f)
+            speed = weaponTravelSpeed selectedWeapon
+
+            bulletTravelDist :: Float
+            bulletTravelDist
+              | Just (Box2D (bx, by) _) <- find bulletHitsWall $ map fzz [0, 0.01 ..] = sqrt ((x - bx) ** 2 + (y - by) ** 2)
+              | otherwise = error "oh no"
+
+            bulletHitsWall :: Object2D a => a -> Bool
+            bulletHitsWall b = any (intersects b) colliders
+
+            -- (\z -> LevelEntity (Bullet AssaultRifle endPoint) (x, y) (0, 0) (dx', dy'))
+            fzz :: Float -> Box2D
+            fzz z = Box2D (x + dx * z, y + dy * z) (6, 6)
 
         updateEntity :: LevelEntity -> Maybe LevelEntity
         updateEntity entity@(LevelEntity (ExplosionEntity totalLifetime lifetime) _ _ _)
-          -- Destroy bullet when it is older than the totalLifetime
+          -- Destroy explosion when it is older than the totalLifetime
           | newLifetime > totalLifetime = Nothing
           | otherwise = Just $ entity {entityType = ExplosionEntity totalLifetime newLifetime}
           where
             newLifetime = lifetime + d
         updateEntity entity@(LevelEntity t pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
-          | bulletHitsWall = Just $ LevelEntity (ExplosionEntity 0.15 0) pos size (0, 0)
+          | bulletHitsWall' newBullet = Just $ createExplosionFromBullet newBullet
           | otherwise = Just newBullet
           where
-            newPos = (x + vx, y + vy)
+            newPos = (x + vx * d, y + vy * d)
             newBullet = entity {entityPosition = newPos}
 
-            -- TODO: Sniper shoots so fast that it can go through walls.
-            -- maybe speciaal voor de sniper collision in halve stappen checken in general
-            -- hij schiet niet zo snel dus je hebt nooit veel sniper kogels -- youri
-            -- alternatively we can raytrace the bullet till it hits the wall, and only check for collision with enemies in each next frame.
-            bulletHitsWall :: Bool
-            bulletHitsWall = any (intersects newBullet) colliders
+        createExplosionFromBullet :: LevelEntity -> LevelEntity
+        createExplosionFromBullet (LevelEntity (Bullet _ (ox, oy) travelDist) (x, y) size (vx, vy)) =
+          LevelEntity (ExplosionEntity 0.15 0) pos size (0, 0)
+          where
+            -- This could be optimized by using memoization, but it isn't really needed atm.
+            s = sqrt(vx**2 + vy**2) / travelDist 
+            pos = (ox + vx/s, oy + vy/s)
+        createExplosionFromBullet _ = error "not a bullet"
+
+        bulletHitsWall' :: LevelEntity -> Bool
+        bulletHitsWall' (LevelEntity (Bullet _ (ox, oy) travelDist) (x, y) _ _) = dist > travelDist
+          where
+            dist = sqrt ((x - ox) ** 2 + (y - oy) ** 2)
+        bulletHitsWall' _ = error "not a bullet"
 
         newLevelEnemies :: [EnemyInstance]
         newLevelEnemies = levelEnemies lvlInst
@@ -148,7 +169,7 @@ updateScene _ d' w@(World s@Gameplay {} _)
           where
             (x, y) = enemyPosition enemy
             (vx, vy) = enemyVelocity enemy
-            size@(w, h) = (14, 14)
+            size@(w, h) = enemySize (enemyType enemy)
 
             speed = enemySpeed (enemyType enemy)
             acceleration = speed / 4

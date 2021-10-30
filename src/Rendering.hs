@@ -106,6 +106,7 @@ renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
       | debugMode i =
         pictures $
           [renderDebugOverlay w, renderObjDebugOverlay pl]
+            ++ map renderObjDebugOverlay (levelEntities levelInstance)
             ++ map renderObjDebugOverlay (levelEnemies levelInstance)
             ++ map renderObjDebugOverlay (levelObjects (level levelInstance))
       | otherwise = blank
@@ -247,10 +248,10 @@ renderEntities :: Assets -> [LevelEntity] -> Picture
 renderEntities a = pictures . map renderEntity
   where
     renderEntity :: LevelEntity -> Picture
-    renderEntity x = setPos (entityPosition x) $ getEntityPicture (entityType x)
+    renderEntity x = setPos (center x) $ getEntityPicture (entityType x)
 
     getEntityPicture :: EntityType -> Picture
-    getEntityPicture (Bullet _) = getImageAsset a "BulletTemp"
+    getEntityPicture Bullet {} = getImageAsset a "BulletTemp"
     getEntityPicture (ExplosionEntity totalLifetime lifetime) = playerBulletImpact (fxSheet a) !! frame
       where
         -- frame = min 2 $ dbg "test" $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3 - 1

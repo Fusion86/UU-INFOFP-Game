@@ -157,7 +157,11 @@ data EntityType
   | DamageBoost
   | JumpHeightBoost
   | AmmoPickup WeaponType
-  | Bullet WeaponType
+  | Bullet
+      { bulletType :: WeaponType,
+        bulletStartPosition :: Vec2,
+        bulletTravelDistance :: Float
+      }
   | ExplosionEntity Float Float
   deriving (Show, Eq)
 
@@ -232,7 +236,7 @@ class Object2D a where
 -- For example: to test whether a new player position is valid. In that case
 -- the player is not yet at a new position, but we want to test whether they could be.
 -- Using a Box2D we can use the 'intersects' function to check whether this position is valid.
-data Box2D = Box2D Vec2 Vec2
+data Box2D = Box2D Vec2 Vec2 deriving (Show)
 
 instance Object2D Player where
   name = const "Player"
@@ -245,12 +249,12 @@ instance Object2D LevelObject where
   size = objectSize
 
 instance Object2D LevelEntity where
-  name = const "Entity"
+  name e = "Entity " ++ show (entityType e)
   position = entityPosition
   size = entitySize
 
 instance Object2D EnemyInstance where
-  name a = "Enemy " ++ show (enemyType a)
+  name a = "Enemy " ++ show (enemyType a) ++ show (enemyPosition a)
   position = enemyPosition
   size = enemySize . enemyType
 
