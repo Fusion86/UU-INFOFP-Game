@@ -1,9 +1,11 @@
 module Main where
 
 import Assets
+import Common
 import Coordinates
 import Data.Map (empty)
 import Graphics.Gloss
+import Graphics.Gloss.Interface.Environment (getScreenSize)
 import Graphics.Gloss.Interface.IO.Game (Event, playIO)
 import Input
 import Levels
@@ -14,8 +16,8 @@ import System.FilePath (joinPath, (</>))
 import TileSet
 import World
 
-createWindow :: Display
-createWindow = InWindow "UU-INFOFP-Game" (round viewWidth, round viewHeight) (0, 0)
+createWindow :: (Int, Int) -> Display
+createWindow wh = InWindow "UU-INFOFP-Game" wh (0, 0)
 
 main :: IO ()
 main = do
@@ -28,8 +30,15 @@ main = do
   initialize
   !font <- load ("assets" </> "PressStart2P.ttf") 8
 
+  -- Figure out how large our window can be, but still scaled to our game.
+  -- Kinda shitty code, could be improved.
+  -- This is also somewhat duplicated code from the `handleInput (EventResize _)` case
+  (wMax, hMax) <- getScreenSize
+  let scale = floorF (min (fromIntegral wMax / gameWidth) (fromIntegral hMax / gameHeight))
+  let wndSize = (floor (gameWidth * scale), floor (gameHeight * scale))
+
   playIO
-    createWindow -- Display mode.
+    (createWindow wndSize) -- Display mode.
     violet -- Background color.
     60 -- Number of simulation steps to take for each second of real time.
     initWorld -- The initial World.

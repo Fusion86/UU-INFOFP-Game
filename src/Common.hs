@@ -34,3 +34,6 @@ renderDbgString :: Color -> String -> Picture
 renderDbgString clr str =
   let x = 0.05
    in scale x x $ color clr $ text str
+
+floorF :: Float -> Float
+floorF = fromIntegral . floor

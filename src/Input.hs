@@ -27,6 +27,21 @@ toggleTimeMultiplier w@(World _ i@Input {timeMultiplier = m}) =
       | m < 0.20 = 0
       | otherwise = m / 2
 
+toggleIntegerScaling :: World -> World
+toggleIntegerScaling w@(World _ i@Input {viewIntegerScale = b}) =
+  resizeWindow
+    (round $ viewWidth i, round $ viewHeight i)
+    w {input = i {viewIntegerScale = not b}}
+
+resizeWindow :: (Int, Int) -> World -> World
+resizeWindow wh world@(World _ i) =
+  world {input = i {viewWidth = w, viewHeight = h, viewScale = scale}}
+  where
+    w = fromIntegral (fst wh)
+    h = fromIntegral (snd wh)
+    scale = if viewIntegerScale i then floorF scale' else scale'
+    scale' = min (w / gameWidth) (h / gameHeight)
+
 isKeyDown :: Input -> Key -> Bool
 isKeyDown i k = member k (keys i)
 
@@ -45,11 +60,16 @@ handleInput (EventKey k Down _ _) w
   | Just ev <- menuKeyMap k = addEvent ev $ addKey k w
   | k == SpecialKey KeyF1 = toggleDebug $ addKey k w
   | k == SpecialKey KeyF2 = toggleTimeMultiplier $ addKey k w
+  | k == SpecialKey KeyF3 = toggleIntegerScaling $ addKey k w
   | otherwise = addKey k w
 -- Any button/key released
 handleInput (EventKey k Up _ _) w = removeKey k w
 -- Mouse move event
-handleInput (EventMotion p) w@(World _ i) =
-  w {input = i {pointer = glossToView (viewWidth, viewHeight) p}}
--- Default, ignore event
-handleInput e w = w
+handleInput (EventMotion (mx, my)) world@(World _ i) =
+  world {input = i {pointer = p}}
+  where
+    (x, y) = (mx + (gameWidth * viewScale i) / 2, (gameHeight * viewScale i) / 2 - my)
+    p = (x / s, y / s)
+    s = viewScale i
+-- Window resize
+handleInput (EventResize wh) w = resizeWindow wh w

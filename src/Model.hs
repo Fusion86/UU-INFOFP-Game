@@ -55,7 +55,11 @@ data Input = Input
     -- | The location of the mouse pointer, normalized to our gameWidth and gameHeight.
     pointer :: Vec2,
     debugMode :: Bool,
-    timeMultiplier :: Float
+    timeMultiplier :: Float,
+    viewWidth :: Float,
+    viewHeight :: Float,
+    viewScale :: Float,
+    viewIntegerScale :: Bool
   }
   deriving (Show)
 
@@ -265,7 +269,10 @@ instance Object2D Box2D where
   size (Box2D _ b) = b
 
 initWorld :: World
-initWorld = World (IntroScene 2.5) (Input S.empty [] (0, 0) False 1)
+initWorld = World (IntroScene 2.5) initInput
+
+initInput :: Input
+initInput = Input S.empty [] (0, 0) False 1 gameWidth gameHeight 1 True
 
 initPlayer :: Player
 initPlayer = Player 100 100 50 8 empty AssaultRifle 0 (100, 100) (0, 0) IdleState
@@ -306,12 +313,3 @@ gameWidth = 576 -- 8 * 72
 
 gameHeight :: Float
 gameHeight = 336 -- 8 * 42
-
-viewScale :: Float
-viewScale = 3 -- For 1440p displays you want to set this to 4
-
-viewWidth :: Float
-viewWidth = gameWidth * viewScale
-
-viewHeight :: Float
-viewHeight = gameHeight * viewScale

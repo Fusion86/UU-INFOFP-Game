@@ -56,7 +56,8 @@ renderWorldScaled a f t l w = do
   world <- renderWorld a f t l w
   -- TODO: Maybe use getScreenSize to automatically determine the viewScale?
   -- This also requires changes to the viewWidth and viewHeight functions.
-  return $ scale viewScale viewScale world
+  let s = viewScale (input w)
+  return $ scale s s world
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
