@@ -45,6 +45,7 @@ loadLevelFromXml xml
 
     mapProps :: Maybe Element
     mapProps = case mapRoot of
+      -- We could use a Maybe monad here, but I like the verbose logging.
       Nothing -> trace "No map root found." Nothing
       Just x -> case findElement (simpleName "properties") x of
         Nothing -> trace "No map properties found" Nothing
@@ -52,6 +53,7 @@ loadLevelFromXml xml
 
     objectGroup :: Maybe Element
     objectGroup = case mapRoot of
+      -- We could use a Maybe monad here, but I like the verbose logging.
       Nothing -> trace "No map root found." Nothing
       Just x -> case findElement (simpleName "objectgroup") x of
         Nothing -> trace "No objectgroup found" Nothing
@@ -63,12 +65,11 @@ loadLevelFromXml xml
       Just x -> mapMaybe parseLevelObject $ findElements (simpleName "object") x
       where
         parseLevelObject :: Element -> Maybe LevelObject
-        parseLevelObject x
-          | Just objectName <- findAttr (simpleName "name") x,
-            Just posX <- findAttr (simpleName "x") x,
-            Just posY <- findAttr (simpleName "y") x =
-            Just $ LevelObject objectName (readFloat posX, readFloat posY) (width, height) levelObjectProperties
-          | otherwise = Nothing
+        parseLevelObject x = do
+          objectName <- findAttr (simpleName "name") x
+          posX <- findAttr (simpleName "x") x
+          posY <- findAttr (simpleName "y") x
+          return $ LevelObject objectName (readFloat posX, readFloat posY) (width, height) levelObjectProperties
           where
             readFloat y = read y :: Float
 
@@ -131,12 +132,10 @@ loadLevelFromXml xml
           | otherwise = Nothing
 
     getPropValueByName :: Maybe Element -> String -> Maybe String
-    getPropValueByName propsElement propName
-      | Just props <- propsElement,
-        Just prop <- filterChild f props,
-        Just value <- findAttr (simpleName "value") prop =
-        Just value
-      | otherwise = Nothing
+    getPropValueByName propsElement propName = do
+      props <- propsElement
+      prop <- filterChild f props
+      findAttr (simpleName "value") prop
       where
         f :: Element -> Bool
         f x

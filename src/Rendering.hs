@@ -284,7 +284,6 @@ renderEnemies ft a = pictures . map renderEnemy
 
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture
 renderHud pt a f pl = do
-  -- TODO: Use map for this
   hpTxt <- renderString f white "HP: 100/100"
   wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
   wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
