@@ -14,6 +14,7 @@ import Graphics.Gloss
     circleSolid,
     color,
     green,
+    line,
     pictures,
     rectangleWire,
     rgbaOfColor,
@@ -92,8 +93,8 @@ renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
   return $
     pictures
       [ bg,
-        renderEntities a (levelEntities levelInstance),
         renderEnemies pt a (levelEnemies levelInstance),
+        renderEntities a (levelEntities levelInstance),
         -- render pickups
         -- render enemies
         renderPlayer pt a w pl,

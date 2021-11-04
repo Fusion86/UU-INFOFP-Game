@@ -257,12 +257,13 @@ instance Object2D LevelObject where
   size = objectSize
 
 instance Object2D LevelEntity where
+  name (LevelEntity (Bullet _ start prev _) _ _ _) = "Bullet " ++ show (truncVec2 start) ++ " " ++ show (truncVec2 prev)
   name e = "Entity " ++ show (entityType e)
   position = entityPosition
   size = entitySize
 
 instance Object2D EnemyInstance where
-  name a = "Enemy " ++ show (enemyType a) ++ show (enemyPosition a)
+  name a = "Enemy " ++ show (enemyType a) ++ " " ++ show (truncVec2 (enemyPosition a))
   position = enemyPosition
   size = enemySize . enemyType
 
@@ -316,3 +317,6 @@ gameWidth = 576 -- 8 * 72
 
 gameHeight :: Float
 gameHeight = 336 -- 8 * 42
+
+truncVec2 :: Vec2 -> Vec2
+truncVec2 (x, y) = (fromIntegral $ truncate x, fromIntegral $ truncate y)

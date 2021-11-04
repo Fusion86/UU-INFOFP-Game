@@ -17,6 +17,7 @@ euclideanDistance (x1, y1) (x2, y2) = sqrt ((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 lineIntersectsObject :: Object2D a => Line -> a -> Maybe Vec2
 lineIntersectsObject l@((x, y), _) box
+  | [a] <- intersections = Just a
   | [a, b] <- intersections = Just $ helper a b
   | otherwise = Nothing
   where

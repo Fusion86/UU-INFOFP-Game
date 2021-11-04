@@ -19,7 +19,8 @@ lineIntersectsObjectTests =
   TestList
     [ TestCase (assertEqual "lineIntersectsObject" Nothing (lineIntersectsObject ((5, 5), (5, 6)) (Box2D (2, 2) (2, 2)))),
       TestCase (assertEqual "lineIntersectsObject" (Just (2.0, 1.25)) (lineIntersectsObject ((1, 1), (5, 2)) (Box2D (2, 0) (2, 2)))),
-      TestCase (assertEqual "lineIntersectsObject" (Just (2.5, 2)) (lineIntersectsObject ((3, 3), (2, 1)) (Box2D (2, 0) (2, 2))))
+      TestCase (assertEqual "lineIntersectsObject" (Just (2.5, 2)) (lineIntersectsObject ((3, 3), (2, 1)) (Box2D (2, 0) (2, 2)))),
+      TestCase (assertEqual "lineIntersectsObject" (Just (2.5, 2)) (lineIntersectsObject ((4, 3), (6, 3)) (Box2D (2, 1) (3, 3))))
     ]
 
 main :: IO ()

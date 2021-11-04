@@ -4,4 +4,7 @@ import Graphics.Gloss
 import Model
 
 setPos :: Vec2 -> Picture -> Picture
-setPos (x, y) = translate (x - gameWidth / 2) (gameHeight / 2 - y)
+setPos = uncurry translate . gameToGloss
+
+gameToGloss :: Vec2 -> Vec2
+gameToGloss (x, y) = (x - gameWidth / 2, gameHeight / 2 - y)

@@ -133,9 +133,6 @@ updateScene _ d' w@(World s@Gameplay {} _)
                   Nothing -> closest
                   Just hitPos -> min closest $ euclideanDistance (x, y) hitPos
 
-            bulletHitsWall :: Object2D a => a -> Bool
-            bulletHitsWall b = any (intersects b) colliders
-
         entityInsideLevel :: LevelEntity -> Bool
         entityInsideLevel LevelEntity {entityPosition = (x, y)} =
           x > -10 && x < gameWidth + 10 && y > -10 && y < gameHeight + 10
@@ -150,10 +147,16 @@ updateScene _ d' w@(World s@Gameplay {} _)
         updateEntity entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
           | bulletHitsWall newBullet = Just $ createExplosionFromBullet newBullet
+          | Just hitPos <- bulletHitsEnemy = Just $ LevelEntity (ExplosionEntity 0.15 0) hitPos size (0, 0)
           | otherwise = Just newBullet
           where
             newPos = (x + vx * d, y + vy * d)
             newBullet = entity {entityPosition = newPos, entityType = t {bulletPrevPosition = pos}}
+
+            bulletHitsEnemy :: Maybe Vec2
+            bulletHitsEnemy = safeHead $ mapMaybe (lineIntersectsObject line) (levelEnemies lvlInst)
+              where
+                line = dbg "line" (pos, newPos)
         -- Default, do nothing.
         updateEntity x = Just x
 
