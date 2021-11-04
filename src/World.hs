@@ -136,9 +136,6 @@ updateScene _ d' w@(World s@Gameplay {} _)
             bulletHitsWall :: Object2D a => a -> Bool
             bulletHitsWall b = any (intersects b) colliders
 
-            fzz :: Float -> Box2D
-            fzz z = Box2D (x + dx * z, y + dy * z) (6, 6)
-
         entityInsideLevel :: LevelEntity -> Bool
         entityInsideLevel LevelEntity {entityPosition = (x, y)} =
           x > -10 && x < gameWidth + 10 && y > -10 && y < gameHeight + 10
