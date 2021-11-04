@@ -10,6 +10,8 @@ type TileSet = Map Int Picture
 
 type Vec2 = (Float, Float)
 
+type Line = (Vec2, Vec2)
+
 data Assets = Assets
   { images :: Map String Picture,
     playerSheet :: PlayerCharacterSheet,
@@ -164,6 +166,7 @@ data EntityType
   | Bullet
       { bulletType :: WeaponType,
         bulletStartPosition :: Vec2,
+        bulletPrevPosition :: Vec2,
         bulletTravelDistance :: Float
       }
   | ExplosionEntity Float Float

@@ -39,7 +39,7 @@ main = do
 
   playIO
     (createWindow wndSize) -- Display mode.
-    violet -- Background color.
+    black -- Background color.
     60 -- Number of simulation steps to take for each second of real time.
     initWorld -- The initial World.
     (renderWorldScaled assets font tileSet levels) -- An action to convert the World a picture.

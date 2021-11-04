@@ -4,8 +4,8 @@
   <export target="../../assets/levels/AnimationTest.xml" format="tmx"/>
  </editorsettings>
  <properties>
-  <property name="Background" value="AnimationTestBg"/>
-  <property name="Name" value="AnimationTest"/>
+  <property name="Background" value="TestLevel2Bg"/>
+  <property name="Name" value="Test Level 2"/>
  </properties>
  <tileset firstgid="1" source="TileSet.tsx"/>
  <layer id="1" name="Background" width="72" height="42">
