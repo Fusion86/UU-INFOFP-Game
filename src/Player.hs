@@ -64,6 +64,10 @@ updatePlayer d w s
 
     newVelocity = (velocityX, velocityY)
 
+    -- WARNING:
+    -- We wrote this before we had the `euclideanDistance` and `lineIntersectsObject` functions in Collision.hs
+    -- These functions are way better than whatever the f we are doing here. So, should someone in the future be
+    -- motivated enough to rewrite the player movement code, then please use those two new functions.
     newPlayerPosition = (newPlayerX, newPlayerY)
       where
         -- Finds the best move we can do. Kinda brute-force, but hey it works.

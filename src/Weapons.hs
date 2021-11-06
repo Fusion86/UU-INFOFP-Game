@@ -9,8 +9,8 @@ weaponShootCooldown SniperRifle = 0.8
 weaponShootCooldown RocketLauncher = 1
 
 weaponDamage :: WeaponType -> Float
-weaponDamage AssaultRifle = 34
-weaponDamage PeaShooter = 3.4
+weaponDamage AssaultRifle = 14
+weaponDamage PeaShooter = 9
 weaponDamage SniperRifle = 114
 weaponDamage RocketLauncher = 200
 

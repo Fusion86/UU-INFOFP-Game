@@ -79,11 +79,11 @@ data CharacterState
 
 data Player = Player
   { -- | Current player health.
-    playerHealth :: Int,
+    playerHealth :: Float,
     -- | Default of 100, can be temporarily increased with upgrades.
-    playerMaxHealth :: Int,
+    playerMaxHealth :: Float,
     -- | Used as a base for damage calculation, can be increased with upgrades.
-    playerDamage :: Int,
+    playerDamage :: Float,
     -- | How high the player can jump, can be increased with upgrades.
     playerJumpHeight :: Int,
     -- | Ammo for each weapon type. The AssaultRifle has infinite ammo (as it is considered the 'default' weapon).
@@ -134,7 +134,7 @@ data TileLayer = TileLayer
 
 data EnemyInstance = EnemyInstance
   { enemyType :: EnemyType,
-    enemyHealth :: Int,
+    enemyHealth :: Float,
     enemyPosition :: Vec2,
     enemyVelocity :: Vec2,
     enemyState :: CharacterState

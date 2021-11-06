@@ -146,8 +146,10 @@ updateScene _ d' w@(World s@Gameplay {} _)
             newLifetime = lifetime + d
         updateEntity entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
-          | bulletHitsWall newBullet = Just $ createExplosionFromBullet newBullet
-          | Just hitPos <- bulletHitsEnemy = Just $ LevelEntity (ExplosionEntity 0.15 0) hitPos size (0, 0)
+          | bulletHitsWall newBullet = Just $ createExplosionAtTravelDist newBullet
+          -- If the bullet hits an enemy, replace it with an Explosion entity.
+          | Just hitPos <- bulletHitsEnemy = Just $ createExplosion hitPos
+          -- If the bullet hits nothing then return a new bullet (which has a new position).  
           | otherwise = Just newBullet
           where
             newPos = (x + vx * d, y + vy * d)
@@ -160,14 +162,17 @@ updateScene _ d' w@(World s@Gameplay {} _)
         -- Default, do nothing.
         updateEntity x = Just x
 
-        createExplosionFromBullet :: LevelEntity -> LevelEntity
-        createExplosionFromBullet (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
-          LevelEntity (ExplosionEntity 0.15 0) pos size (0, 0)
+        createExplosion :: Vec2 -> LevelEntity
+        createExplosion pos = LevelEntity (ExplosionEntity 0.15 0) pos (0, 0) (0, 0)
+
+        createExplosionAtTravelDist :: LevelEntity -> LevelEntity
+        createExplosionAtTravelDist (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
+          createExplosion pos
           where
             -- This could be optimized by using memoization, but it isn't really needed atm.
             s = sqrt (vx ** 2 + vy ** 2) / travelDist
             pos = (ox + vx / s, oy + vy / s)
-        createExplosionFromBullet _ = error "not a bullet"
+        createExplosionAtTravelDist _ = error "not a bullet"
 
         bulletHitsWall :: LevelEntity -> Bool
         bulletHitsWall (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) _ _) = dist > travelDist
@@ -192,10 +197,13 @@ updateScene _ d' w@(World s@Gameplay {} _)
               -- TODO: This uses hardcoded damage values.
               -- example: | Just bullet <- enemyHitByBullet = hp - (weaponDamage bullet)
               -- ... ^ this won't work because the bullet type is trash (just like this language).
-              | enemyHitByBullet = hp - 20
+              | Just bullet <- enemyHitByBullet = hp - dmg bullet
               | otherwise = hp
+              where
+                dmg (LevelEntity Bullet {bulletType = wp} _ _ _) = weaponDamage wp
+                dmg _ = 0
 
-            enemyHitByBullet = any ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
+            enemyHitByBullet = find ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
             bullets = filter f lvlEntities
               where
                 -- Shitty filter
