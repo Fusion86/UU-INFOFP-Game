@@ -5,7 +5,7 @@ import Collision
 import Common
 import Coordinates
 import Data.List (find)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Set (empty, member)
 import Graphics.Gloss.Interface.IO.Game
 import Input
@@ -156,7 +156,7 @@ updateScene _ d' w@(World s@Gameplay {} _)
             bulletHitsEnemy :: Maybe Vec2
             bulletHitsEnemy = safeHead $ mapMaybe (lineIntersectsObject line) (levelEnemies lvlInst)
               where
-                line = dbg "line" (pos, newPos)
+                line = (pos, newPos)
         -- Default, do nothing.
         updateEntity x = Just x
 
@@ -179,11 +179,28 @@ updateScene _ d' w@(World s@Gameplay {} _)
         newLevelEnemies = levelEnemies lvlInst
 
         updateEnemy :: EnemyInstance -> Maybe EnemyInstance
-        updateEnemy enemy = Just $ enemy {enemyPosition = newPosition, enemyVelocity = newVelocity}
+        updateEnemy enemy
+          | newHp > 0 = Just $ enemy {enemyPosition = newPosition, enemyVelocity = newVelocity, enemyHealth = newHp}
+          | otherwise = Nothing
           where
             (x, y) = enemyPosition enemy
             (vx, vy) = enemyVelocity enemy
+            hp = enemyHealth enemy
             size@(w, h) = enemySize (enemyType enemy)
+
+            newHp
+              -- TODO: This uses hardcoded damage values.
+              -- example: | Just bullet <- enemyHitByBullet = hp - (weaponDamage bullet)
+              -- ... ^ this won't work because the bullet type is trash (just like this language).
+              | enemyHitByBullet = hp - 20
+              | otherwise = hp
+
+            enemyHitByBullet = any ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
+            bullets = filter f lvlEntities
+              where
+                -- Shitty filter
+                f (LevelEntity Bullet {} _ _ _) = True
+                f _ = False
 
             speed = enemySpeed (enemyType enemy)
             acceleration = speed / 4
@@ -222,3 +239,8 @@ updateScene _ d' w@(World s@Gameplay {} _)
 
             onGround :: Bool
             onGround = not $ validMoveY (y + onGroundMagicNumber)
+
+getBulletHitboxRay :: Float -> LevelEntity -> Line
+getBulletHitboxRay d entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy)) =
+  (pos, (x + vx * d, y + vy * d))
+getBulletHitboxRay _ _ = error "not a bullet"
