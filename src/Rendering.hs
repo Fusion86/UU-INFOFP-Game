@@ -28,13 +28,14 @@ import Levels
 import Model
 import SDL.Font (Font, solid)
 import SDL.Vect (V4 (..))
+import Text.Printf (printf)
 import Prelude hiding (lookup)
 
 renderString :: Font -> Color -> String -> IO Picture
 renderString = renderString' OriginTopLeft
 
-renderCenterString :: Font -> Color -> String -> IO Picture
-renderCenterString = renderString' OriginCenter
+renderStringCenter :: Font -> Color -> String -> IO Picture
+renderStringCenter = renderString' OriginCenter
 
 -- | Render a string with given font and color. The origin is the middle of the string.
 -- Does not cache, and maybe it leaks memory idk.
@@ -64,9 +65,9 @@ renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
 renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
   -- TODO: Maybe use caching?
-  gameTxt <- renderCenterString f red "Game"
-  subTxt <- renderCenterString f white "UU-INFOFP"
-  menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Quit"]
+  gameTxt <- renderStringCenter f red "Game"
+  subTxt <- renderStringCenter f white "UU-INFOFP"
+  menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Run Benchmark", "Quit"]
   return $
     pictures
       [ getImageAsset a "MainMenuBg",
@@ -75,7 +76,7 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
         renderList (288, 188) 12 menuTxts
       ]
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
-  selectLevelTxt <- renderCenterString f white "Select a level"
+  selectLevelTxt <- renderStringCenter f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
   let (bg, fg) = renderLevel 0 a t selectedLevel
   return $
@@ -95,8 +96,6 @@ renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
       [ bg,
         renderEnemies pt a (levelEnemies levelInstance),
         renderEntities a (levelEntities levelInstance),
-        -- render pickups
-        -- render enemies
         renderPlayer pt a w pl,
         fg,
         hud,
@@ -113,15 +112,41 @@ renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
             ++ map renderObjDebugOverlay (levelObjects (level levelInstance))
       | otherwise = blank
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
-  pausedTxt <- renderCenterString f white "Game Paused"
+  pausedTxt <- renderStringCenter f white "Game Paused"
   menuTxts <- renderMenuItems f selectedItem ["Resume", "Quit"]
   return $
     pictures
       [ setPos (288, 96) pausedTxt,
         renderList (288, 188) 12 menuTxts
       ]
+renderWorld a f t levels w@(World (Benchmark benchWorld rt score ds) i) = do
+  benchWorld <- renderWorld a f t levels benchWorld
+  -- benchTxt <-
+  --   renderStringCenter f green $
+  --     "Benchmark    remaining time: "
+  --       ++ printf "%0.2f" rt
+  --       ++ "    ticks: "
+  --       ++ show ticks
+  txts <-
+    mapM
+      (renderString f white)
+      [ "Benchmark",
+        "renderScale: " ++ show (viewScale i),
+        "remaining time: " ++ printf "%0.2f" rt,
+        "delta stdDev: " ++ stdDevStr,
+        "score: " ++ show score
+      ]
+  return $
+    pictures
+      [ benchWorld,
+        renderList (8, 8) 12 txts
+      ]
+  where
+    stdDevStr
+      | rt <= 0 = printf "%0.6f" (stdev ds)
+      | otherwise = "(shown after finish)"
 renderWorld _ f _ _ _ = do
-  str <- renderString f red "Scene not implemented"
+  str <- renderStringCenter f red "Scene not implemented"
   return $ setPos (288, 160) str
 
 renderMenuItems :: Font -> Int -> [String] -> IO [Picture]
@@ -150,9 +175,9 @@ renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
       -- Skip items that aren't in the visible item range (scroll view).
       | currentIndex `notElem` visibleItemRange = rest
       -- If the item is the selected item highlight it red.
-      | currentIndex == selectedIndex = renderCenterString font red x : rest
+      | currentIndex == selectedIndex = renderStringCenter font red x : rest
       -- Otherwise just render it the default color (white for now).
-      | otherwise = renderCenterString font white x : rest
+      | otherwise = renderStringCenter font white x : rest
       where
         rest = helper (currentIndex + 1) xs
 
@@ -308,8 +333,11 @@ renderHud pt a f pl = do
       | otherwise = white
 
 renderDebugOverlay :: World -> Picture
-renderDebugOverlay (World _ i) =
-  setPos (10, 10) $ renderDbgString green $ "timeMultiplier: " ++ show (timeMultiplier i)
+renderDebugOverlay (World s i) =
+  setPos (10, 10) $ renderDbgString green $ "timeMultiplier: " ++ show (timeMultiplier i) ++ extra s
+  where
+    extra (Gameplay _ _ pt) = " playTime: " ++ printf "%0.2f" pt
+    extra _ = ""
 
 renderObjDebugOverlay :: Object2D a => a -> Picture
 renderObjDebugOverlay o = pictures [boundingBox, origin, namePic]

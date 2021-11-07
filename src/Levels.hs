@@ -86,11 +86,16 @@ loadLevelFromXml xml
               | Just props <- findElement (simpleName "properties") x = fromList $ mapMaybe f (elChildren props)
               | otherwise = empty
               where
-                f :: Element -> Maybe (String, String)
+                f :: Element -> Maybe (LevelObjectProperty, String)
                 f x = do
                   name <- findAttr (simpleName "name") x
+                  propType <- parseLevelObjectProperty name
                   value <- findAttr (simpleName "value") x
-                  return (name, value)
+                  return (propType, value)
+
+            parseLevelObjectProperty :: String -> Maybe LevelObjectProperty
+            parseLevelObjectProperty "SpawnChance" = Just SpawnChance
+            parseLevelObjectProperty _ = Nothing
 
     levelName :: Maybe String
     levelName = getPropValueByName mapProps "Name"

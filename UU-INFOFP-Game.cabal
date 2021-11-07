@@ -49,6 +49,7 @@ library
   build-depends:
       JuicyPixels
     , JuicyPixels-extra
+    , MonadRandom
     , base >=4.7 && <5
     , bytestring
     , containers
@@ -57,7 +58,9 @@ library
     , gloss
     , gloss-juicy
     , gloss-sdl2-surface
+    , mtl
     , pretty-simple
+    , random
     , sdl2
     , sdl2-ttf
     , text
@@ -78,6 +81,7 @@ executable UU-INFOFP-Game-exe
   build-depends:
       JuicyPixels
     , JuicyPixels-extra
+    , MonadRandom
     , UU-INFOFP-Game
     , base >=4.7 && <5
     , bytestring
@@ -87,7 +91,9 @@ executable UU-INFOFP-Game-exe
     , gloss
     , gloss-juicy
     , gloss-sdl2-surface
+    , mtl
     , pretty-simple
+    , random
     , sdl2
     , sdl2-ttf
     , text
@@ -110,6 +116,7 @@ test-suite UU-INFOFP-Game-test
       HUnit
     , JuicyPixels
     , JuicyPixels-extra
+    , MonadRandom
     , UU-INFOFP-Game
     , base >=4.7 && <5
     , bytestring
@@ -119,7 +126,9 @@ test-suite UU-INFOFP-Game-test
     , gloss
     , gloss-juicy
     , gloss-sdl2-surface
+    , mtl
     , pretty-simple
+    , random
     , sdl2
     , sdl2-ttf
     , text

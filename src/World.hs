@@ -3,9 +3,11 @@ module World (updateWorld) where
 import Assets
 import Collision
 import Common
+import Control.Monad.Random (Rand, RandomGen, evalRand, getRandomR, mkStdGen)
 import Coordinates
 import Data.List (find)
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Map (lookup)
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Set (empty, member)
 import Graphics.Gloss.Interface.IO.Game
 import Input
@@ -18,6 +20,7 @@ import SDL.Font (Font)
 import System.Exit (exitSuccess)
 import System.IO.Unsafe (unsafePerformIO)
 import Weapons
+import Prelude hiding (lookup)
 
 updateWorld :: [Level] -> Float -> World -> World
 updateWorld l d w@(World s i) =
@@ -43,15 +46,21 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
   case menuType of
     -- Main Menu
     MainMenu ->
-      let (activatedItem, s) = updateMenuScene 3 d w
+      let (activatedItem, s) = updateMenuScene 4 d w
        in case activatedItem of
-            -- Start game, currently always starts the first level.
-            Just 0 -> createGameplay (head l) initPlayer
+            -- Start the intro level
+            Just 0 -> case find ((==) "Intro" . levelName) l of
+              Just x -> createGameplay x initPlayer
+              Nothing -> trace "No intro level found!" s
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
+            -- Benchmark
+            Just 2 -> case find ((==) "Benchmark" . levelName) l of
+              Just x -> createBenchmark x
+              Nothing -> trace "No benchmark level found!" s
             -- Quit
             -- I don't want to introduce IO for the whole hierarchy just because of this one function.
-            Just 2 -> unsafePerformIO exitSuccess
+            Just 3 -> unsafePerformIO exitSuccess
             -- Default
             _ -> s
     -- Level Select Menu
@@ -109,7 +118,8 @@ updateScene _ d' w@(World s@Gameplay {} _)
     newLevelInstance =
       lvlInst
         { levelEntities = filter entityInsideLevel $ mapMaybe updateEntity newLevelEntities,
-          levelEnemies = mapMaybe updateEnemy newLevelEnemies
+          levelEnemies = mapMaybe updateEnemy newLevelEnemies,
+          levelTimeSinceLastSpawnerTick = newTimeSinceLastSpawnerTick
         }
       where
         newLevelEntities :: [LevelEntity]
@@ -149,7 +159,7 @@ updateScene _ d' w@(World s@Gameplay {} _)
           | bulletHitsWall newBullet = Just $ createExplosionAtTravelDist newBullet
           -- If the bullet hits an enemy, replace it with an Explosion entity.
           | Just hitPos <- bulletHitsEnemy = Just $ createExplosion hitPos
-          -- If the bullet hits nothing then return a new bullet (which has a new position).  
+          -- If the bullet hits nothing then return a new bullet (which has a new position).
           | otherwise = Just newBullet
           where
             newPos = (x + vx * d, y + vy * d)
@@ -180,8 +190,34 @@ updateScene _ d' w@(World s@Gameplay {} _)
             dist = sqrt ((x - ox) ** 2 + (y - oy) ** 2)
         bulletHitsWall _ = error "not a bullet"
 
+        shouldSpawnEnemies = levelTimeSinceLastSpawnerTick lvlInst > 1
+        newTimeSinceLastSpawnerTick
+          | shouldSpawnEnemies = 0
+          | otherwise = levelTimeSinceLastSpawnerTick lvlInst + d
+
         newLevelEnemies :: [EnemyInstance]
-        newLevelEnemies = levelEnemies lvlInst
+        newLevelEnemies = levelEnemies lvlInst ++ spawnedEnemies
+          where
+            spawners = filter ((==) "EnemySpawner" . objectName) lvlObjs
+
+            spawnedEnemies :: [EnemyInstance]
+            spawnedEnemies
+              | shouldSpawnEnemies = catMaybes $ evalRand (mapM spawnMaybe spawners) (mkStdGen $ floor pt)
+              | otherwise = []
+
+            spawnMaybe :: (RandomGen g) => LevelObject -> Rand g (Maybe EnemyInstance)
+            spawnMaybe x = do
+              -- This is our RandomGen monad
+              rng <- getRandomR (0, 100)
+              return
+                ( -- This is our Maybe monad
+                  do
+                    -- Chance is an optional property. If it is missing then just abort (aka return Nothing).
+                    chance <- lookup SpawnChance (objectProperties x)
+                    if (read chance :: Int) > rng
+                      then return $ EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
+                      else Nothing
+                )
 
         updateEnemy :: EnemyInstance -> Maybe EnemyInstance
         updateEnemy enemy
@@ -247,6 +283,15 @@ updateScene _ d' w@(World s@Gameplay {} _)
 
             onGround :: Bool
             onGround = not $ validMoveY (y + onGroundMagicNumber)
+updateScene levels d (World b@(Benchmark w rt t ds) _)
+  | rt > 0 =
+    b
+      { benchmarkWorld = updateWorld levels d w,
+        benchmarkRemainingTime = rt - d,
+        benchmarkScore = t + 1,
+        benchmarkDeltas = d : ds
+      }
+  | otherwise = b
 
 getBulletHitboxRay :: Float -> LevelEntity -> Line
 getBulletHitboxRay d entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy)) =

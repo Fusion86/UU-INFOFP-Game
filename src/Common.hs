@@ -37,3 +37,11 @@ renderDbgString clr str =
 
 floorF :: Float -> Float
 floorF = fromIntegral . floor
+
+-- Taken from https://stackoverflow.com/a/46414344/2125072
+-- TODO: I didn't actually check whether this works.
+stdev :: [Float] -> Float
+stdev xs = sqrt . average . map ((^ 2) . (-) axs) $ xs
+  where
+    average = (/) <$> sum <*> realToFrac . length
+    axs = average xs

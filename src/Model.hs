@@ -44,6 +44,12 @@ data Scene
         -- | Play time in seconds.
         playTime :: Float
       }
+  | Benchmark
+      { benchmarkWorld :: World,
+        benchmarkRemainingTime :: Float,
+        benchmarkScore :: Int,
+        benchmarkDeltas :: [Float]
+      }
   deriving (Show)
 
 data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel
@@ -117,7 +123,8 @@ data Level = Level
 data LevelInstance = LevelInstance
   { level :: Level,
     levelEntities :: [LevelEntity],
-    levelEnemies :: [EnemyInstance]
+    levelEnemies :: [EnemyInstance],
+    levelTimeSinceLastSpawnerTick :: Float
     -- pickupItems :: [PickupItemInstance]
   }
   deriving (Show)
@@ -172,12 +179,13 @@ data EntityType
   | ExplosionEntity Float Float
   deriving (Show, Eq)
 
-type LevelObjectProperties = Map String String
+data LevelObjectProperty = SpawnChance deriving (Show, Eq, Ord)
+
+type LevelObjectProperties = Map LevelObjectProperty String
 
 -- Might not be the best name for it, but in our map editor the same name is used.
 data LevelObject = LevelObject
-  { -- | The player will spawn/respawn in this zone.
-    objectName :: String,
+  { objectName :: String,
     objectPosition :: Vec2,
     objectSize :: Vec2,
     objectProperties :: LevelObjectProperties
@@ -288,7 +296,7 @@ initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
 createLevelInstance :: Level -> LevelInstance
-createLevelInstance l = LevelInstance l [] enemies
+createLevelInstance l = LevelInstance l [] enemies 0
   where
     -- Spawn a enemy for each EnemySpawner
     -- TODO: This ignores enemy type
@@ -302,6 +310,11 @@ createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
   where
     -- TODO: Set player position to the spawn position in the level.
     newPlayer = p
+
+createBenchmark :: Level -> Scene
+createBenchmark l = Benchmark (World (createGameplay l dummyPlayer) initInput) 30 0 []
+  where
+    dummyPlayer = initPlayer
 
 enemySpeed :: EnemyType -> Float
 enemySpeed = const 50

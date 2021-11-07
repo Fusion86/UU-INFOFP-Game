@@ -18,6 +18,9 @@ dependencies:
   - filepath
   - text
   - bytestring
+  - mtl
+  - random
+  - MonadRandom
   - pretty-simple
   - sdl2
   - sdl2-ttf
