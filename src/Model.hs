@@ -46,9 +46,7 @@ data Scene
       }
   | Benchmark
       { benchmarkWorld :: World,
-        benchmarkRemainingTime :: Float,
-        benchmarkScore :: Int,
-        benchmarkDeltas :: [Float]
+        benchmarkRemainingTime :: Float
       }
   deriving (Show)
 
@@ -318,7 +316,7 @@ createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
     newPlayer = p
 
 createBenchmark :: Level -> Scene
-createBenchmark l = Benchmark (World (createGameplay l dummyPlayer) initInput) 30 0 []
+createBenchmark l = Benchmark (World (createGameplay l dummyPlayer) initInput) 30
   where
     dummyPlayer = initPlayer
 

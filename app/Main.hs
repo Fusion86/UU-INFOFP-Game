@@ -3,6 +3,7 @@ module Main where
 import Assets
 import Common
 import Coordinates
+import Data.List
 import Data.Map (empty)
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Environment (getScreenSize)
@@ -12,6 +13,7 @@ import Levels
 import Model
 import Rendering
 import SDL.Font (initialize, load)
+import System.Environment
 import System.FilePath (joinPath, (</>))
 import TileSet
 import World
@@ -37,14 +39,32 @@ main = do
   let scale = floorF (min (fromIntegral wMax / gameWidth) (fromIntegral hMax / gameHeight))
   let wndSize = (floor (gameWidth * scale), floor (gameHeight * scale))
 
-  playIO
-    (createWindow wndSize) -- Display mode.
-    black -- Background color.
-    60 -- Number of simulation steps to take for each second of real time.
-    initWorld -- The initial World.
-    (renderWorldScaled assets font tileSet levels) -- An action to convert the World a picture.
-    handleInputIO -- A function to handle input events.
-    (updateWorldIO levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
+  args <- getArgs
+
+  if "--benchmark" `elem` args
+    then case find ((==) "Benchmark" . levelName) levels of
+      Just l -> do
+        putStrLn $ "[Benchmark Scale = " ++ show scale ++ "]"
+        putStrLn $ "[Benchmark WindowSize = " ++ show wndSize ++ "]"
+        putStrLn "[Benchmark Start]"
+        playIO
+          (createWindow wndSize)
+          black
+          60
+          (World (createBenchmark l) initInput)
+          (renderWorldScaled assets font tileSet levels)
+          handleInputIOBenchmark
+          (updateWorldIO levels)
+      Nothing -> error "No benchmark level found!"
+    else
+      playIO
+        (createWindow wndSize) -- Display mode.
+        black -- Background color.
+        60 -- Number of simulation steps to take for each second of real time.
+        initWorld -- The initial World.
+        (renderWorldScaled assets font tileSet levels) -- An action to convert the World a picture.
+        handleInputIO -- A function to handle input events.
+        (updateWorldIO levels) -- A function to step the World one iteration. It is passed the period of time (in seconds) needing to be advanced.
   where
     handleInputIO e w = return $ handleInput e w
     updateWorldIO l d w = return $ updateWorld l d w

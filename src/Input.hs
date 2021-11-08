@@ -1,10 +1,11 @@
-module Input (isKeyDown, handleInput) where
+module Input (isKeyDown, handleInput, handleInputIOBenchmark) where
 
 import Common
 import Coordinates
 import Data.Set (delete, insert, member)
 import Graphics.Gloss.Interface.IO.Game
 import Model
+import System.Exit (exitSuccess)
 
 addKey :: Key -> World -> World
 addKey k w@(World _ i) = trace ("keyDown: " ++ show k) w {input = i {keys = insert k (keys i)}}
@@ -73,3 +74,8 @@ handleInput (EventMotion (mx, my)) world@(World _ i) =
     s = viewScale i
 -- Window resize
 handleInput (EventResize wh) w = resizeWindow wh w
+
+handleInputIOBenchmark :: Event -> World -> IO World
+handleInputIOBenchmark (EventKey (SpecialKey KeyEsc) Down _ _) w =
+  exitSuccess
+handleInputIOBenchmark e w = return $ handleInput e w

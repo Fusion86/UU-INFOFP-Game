@@ -56,18 +56,15 @@ renderString' o f c str = do
 renderWorldScaled :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorldScaled a f t l w = do
   world <- renderWorld a f t l w
-  -- TODO: Maybe use getScreenSize to automatically determine the viewScale?
-  -- This also requires changes to the viewWidth and viewHeight functions.
   let s = viewScale (input w)
   return $ scale s s world
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
 renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
-  -- TODO: Maybe use caching?
   gameTxt <- renderStringCenter f red "Game"
   subTxt <- renderStringCenter f white "UU-INFOFP"
-  menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Run Benchmark", "Quit"]
+  menuTxts <- renderMenuItems f selectedItem ["Start", "Level Select", "Quit"]
   return $
     pictures
       [ getImageAsset a "MainMenuBg",
@@ -119,32 +116,20 @@ renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
       [ setPos (288, 96) pausedTxt,
         renderList (288, 188) 12 menuTxts
       ]
-renderWorld a f t levels w@(World (Benchmark benchWorld rt score ds) i) = do
+renderWorld a f t levels w@(World (Benchmark benchWorld rt) i) = do
   benchWorld <- renderWorld a f t levels benchWorld
-  -- benchTxt <-
-  --   renderStringCenter f green $
-  --     "Benchmark    remaining time: "
-  --       ++ printf "%0.2f" rt
-  --       ++ "    ticks: "
-  --       ++ show ticks
   txts <-
     mapM
       (renderString f white)
       [ "Benchmark",
-        "renderScale: " ++ show (viewScale i),
-        "remaining time: " ++ printf "%0.2f" rt,
-        "delta stdDev: " ++ stdDevStr,
-        "score: " ++ show score
+        "render scale: " ++ show (viewScale i),
+        "remaining time: " ++ printf "%0.2f" rt
       ]
   return $
     pictures
       [ benchWorld,
         renderList (8, 8) 12 txts
       ]
-  where
-    stdDevStr
-      | rt <= 0 = printf "%0.6f" (stdev ds)
-      | otherwise = "(shown after finish)"
 renderWorld _ f _ _ _ = do
   str <- renderStringCenter f red "Scene not implemented"
   return $ setPos (288, 160) str

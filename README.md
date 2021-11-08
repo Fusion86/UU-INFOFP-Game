@@ -55,6 +55,17 @@ LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
 stack --profile run --rts-options -p
 ```
 
+## How to run a benchmark (Linux only)
+
+```sh
+# Create dist
+./scripts/build-dist.sh
+
+# Go into dist folder and run benchmark
+cd dist
+python3 run-benchmark.py
+```
+
 ## How to use the map builder
 
 ### Setup

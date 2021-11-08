@@ -46,7 +46,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
   case menuType of
     -- Main Menu
     MainMenu ->
-      let (activatedItem, s) = updateMenuScene 4 d w
+      let (activatedItem, s) = updateMenuScene 3 d w
        in case activatedItem of
             -- Start the intro level
             Just 0 -> case find ((==) "Intro" . levelName) l of
@@ -54,13 +54,9 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
               Nothing -> trace "No intro level found!" s
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
-            -- Benchmark
-            Just 2 -> case find ((==) "Benchmark" . levelName) l of
-              Just x -> createBenchmark x
-              Nothing -> trace "No benchmark level found!" s
             -- Quit
             -- I don't want to introduce IO for the whole hierarchy just because of this one function.
-            Just 3 -> unsafePerformIO exitSuccess
+            Just 2 -> unsafePerformIO exitSuccess
             -- Default
             _ -> s
     -- Level Select Menu
@@ -313,15 +309,13 @@ updateScene _ d' w@(World s@Gameplay {} _)
 
             onGround :: Bool
             onGround = not $ validMoveY (y + onGroundMagicNumber)
-updateScene levels d (World b@(Benchmark w rt t ds) _)
+updateScene levels d (World b@(Benchmark w rt) _)
   | rt > 0 =
     b
       { benchmarkWorld = updateWorld levels d w,
-        benchmarkRemainingTime = rt - d,
-        benchmarkScore = t + 1,
-        benchmarkDeltas = d : ds
+        benchmarkRemainingTime = rt - d
       }
-  | otherwise = b
+  | otherwise = unsafePerformIO (putStrLn "[Benchmark End]" >>= const exitSuccess)
 
 getBulletHitboxRay :: Float -> LevelEntity -> Line
 getBulletHitboxRay d entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy)) =

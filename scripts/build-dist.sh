@@ -8,3 +8,4 @@ fi
 stack build --ghc-options -O2 --copy-bins --local-bin-path "./dist"
 cp -r assets/ dist/
 cp -r deps/linux64/* dist/
+cp scripts/run-benchmark.py dist/
