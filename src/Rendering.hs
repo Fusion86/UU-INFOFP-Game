@@ -232,18 +232,21 @@ animateTile ft i
   | i == 673 && odd t = 674
   | i == 674 && odd t = 673
   -- Laser
-  | i == 457 && odd t = 459
-  | i == 458 && odd t = 460
-  | i == 501 && odd t = 503
-  | i == 502 && odd t = 504
-  | i == 545 && odd t = 547
-  | i == 546 && odd t = 548
-  | i == 589 && odd t = 591
-  | i == 590 && odd t = 592
+  | i == 457 && odd lt = 459
+  | i == 458 && odd lt = 460
+  | i == 501 && odd lt = 503
+  | i == 502 && odd lt = 504
+  | i == 545 && odd lt = 547
+  | i == 546 && odd lt = 548
+  | i == 589 && odd lt = 591
+  | i == 590 && odd lt = 592
   -- Non animated tile
   | otherwise = i
   where
     t = round ft
+
+    -- Laser t, magic numbers.
+    lt = floor ((ft - fromIntegral (floor ft)) * 3) `mod` 2
 
 renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ i) = setPos (pointer i) $ getImageAsset a "Cursor"
@@ -282,10 +285,14 @@ renderEntities a = pictures . map renderEntity
     getEntityPicture :: EntityType -> Picture
     getEntityPicture Bullet {bulletType = PeaShooter} = playerBullets fx !! 2
     getEntityPicture Bullet {} = playerBullets fx !! 0
-    getEntityPicture (ExplosionEntity totalLifetime lifetime) = playerBulletImpact (fxSheet a) !! frame
+    getEntityPicture (ExplosionEntity t totalLifetime lifetime) = frame
       where
-        -- frame = min 2 $ dbg "test" $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3 - 1
-        frame = min 2 $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * 3
+        frame
+          | t == DamageExplosion = explosions (fxSheet a) !! getFrame 8
+          | otherwise = playerBulletImpact (fxSheet a) !! getFrame 3
+
+        getFrame :: Int -> Int
+        getFrame i = min (i - 1) $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * fromIntegral i
     getEntityPicture _ = renderDbgString red "entity not implemented"
 
 renderEnemies :: Float -> Assets -> [EnemyInstance] -> Picture

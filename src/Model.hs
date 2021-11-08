@@ -176,7 +176,12 @@ data EntityType
         bulletPrevPosition :: Vec2,
         bulletTravelDistance :: Float
       }
-  | ExplosionEntity Float Float
+  | ExplosionEntity ExplosionType Float Float
+  deriving (Show, Eq)
+
+data ExplosionType
+  = BulletImpact
+  | DamageExplosion
   deriving (Show, Eq)
 
 data LevelObjectProperty = SpawnChance deriving (Show, Eq, Ord)
@@ -209,7 +214,8 @@ data EnemyCharacterSheet = EnemyCharacterSheet
 
 data FxSheet = FxSheet
   { playerBullets :: [Picture],
-    playerBulletImpact :: [Picture]
+    playerBulletImpact :: [Picture],
+    explosions :: [Picture]
   }
   deriving (Show)
 

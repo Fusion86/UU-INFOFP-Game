@@ -12,7 +12,7 @@ weaponDamage :: WeaponType -> Float
 weaponDamage AssaultRifle = 14
 weaponDamage PeaShooter = 9
 weaponDamage SniperRifle = 114
-weaponDamage RocketLauncher = 200
+weaponDamage RocketLauncher = 0
 
 weaponTravelSpeed :: WeaponType -> Float
 weaponTravelSpeed AssaultRifle = 8 * 715 / 6 -- ak47

@@ -148,22 +148,22 @@ updateScene _ d' w@(World s@Gameplay {} _)
           x > -10 && x < gameWidth + 10 && y > -10 && y < gameHeight + 10
 
         updateEntity :: LevelEntity -> Maybe LevelEntity
-        updateEntity entity@(LevelEntity (ExplosionEntity totalLifetime lifetime) _ _ _)
+        updateEntity entity@(LevelEntity (ExplosionEntity explosionType totalLifetime lifetime) _ _ _)
           -- Destroy explosion when it is older than the totalLifetime
           | newLifetime > totalLifetime = Nothing
-          | otherwise = Just $ entity {entityType = ExplosionEntity totalLifetime newLifetime}
+          | otherwise = Just $ entity {entityType = ExplosionEntity explosionType totalLifetime newLifetime}
           where
             newLifetime = lifetime + d
-        updateEntity entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy))
+        updateEntity entity@(LevelEntity b@Bullet {bulletType = t} pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
-          | bulletHitsWall newBullet = Just $ createExplosionAtTravelDist newBullet
+          | bulletHitsWall newBullet = Just $ createExplosionAtTravelDist t newBullet
           -- If the bullet hits an enemy, replace it with an Explosion entity.
-          | Just hitPos <- bulletHitsEnemy = Just $ createExplosion hitPos
+          | Just hitPos <- bulletHitsEnemy = Just $ createExplosion t hitPos
           -- If the bullet hits nothing then return a new bullet (which has a new position).
           | otherwise = Just newBullet
           where
             newPos = (x + vx * d, y + vy * d)
-            newBullet = entity {entityPosition = newPos, entityType = t {bulletPrevPosition = pos}}
+            newBullet = entity {entityPosition = newPos, entityType = b {bulletPrevPosition = pos}}
 
             bulletHitsEnemy :: Maybe Vec2
             bulletHitsEnemy = safeHead $ mapMaybe (lineIntersectsObject line) (levelEnemies lvlInst)
@@ -172,17 +172,21 @@ updateScene _ d' w@(World s@Gameplay {} _)
         -- Default, do nothing.
         updateEntity x = Just x
 
-        createExplosion :: Vec2 -> LevelEntity
-        createExplosion pos = LevelEntity (ExplosionEntity 0.15 0) pos (0, 0) (0, 0)
+        createExplosion :: WeaponType -> Vec2 -> LevelEntity
+        createExplosion wpn pos = LevelEntity explosion pos (0, 0) (0, 0)
+          where
+            explosion
+              | wpn == RocketLauncher = ExplosionEntity DamageExplosion 0.3 0
+              | otherwise = ExplosionEntity BulletImpact 0.15 0
 
-        createExplosionAtTravelDist :: LevelEntity -> LevelEntity
-        createExplosionAtTravelDist (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
-          createExplosion pos
+        createExplosionAtTravelDist :: WeaponType -> LevelEntity -> LevelEntity
+        createExplosionAtTravelDist wpn (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
+          createExplosion wpn pos
           where
             -- This could be optimized by using memoization, but it isn't really needed atm.
             s = sqrt (vx ** 2 + vy ** 2) / travelDist
             pos = (ox + vx / s, oy + vy / s)
-        createExplosionAtTravelDist _ = error "not a bullet"
+        createExplosionAtTravelDist _ _ = error "not a bullet"
 
         bulletHitsWall :: LevelEntity -> Bool
         bulletHitsWall (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) _ _) = dist > travelDist
@@ -234,17 +238,43 @@ updateScene _ d' w@(World s@Gameplay {} _)
               -- example: | Just bullet <- enemyHitByBullet = hp - (weaponDamage bullet)
               -- ... ^ this won't work because the bullet type is trash (just like this language).
               | Just bullet <- enemyHitByBullet = hp - dmg bullet
+              -- if hit by explosion from rocket launcher
+              | explosionDamage > 0 = hp - explosionDamage
               | otherwise = hp
               where
                 dmg (LevelEntity Bullet {bulletType = wp} _ _ _) = weaponDamage wp
                 dmg _ = 0
 
             enemyHitByBullet = find ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
-            bullets = filter f lvlEntities
+            bullets = filter isBullet lvlEntities
               where
                 -- Shitty filter
-                f (LevelEntity Bullet {} _ _ _) = True
-                f _ = False
+                isBullet (LevelEntity Bullet {} _ _ _) = True
+                isBullet _ = False
+
+            explosionDamage :: Float
+            explosionDamage = sum $ map fst explosionsHit
+
+            -- Returns a list with the explosions that hit the enemy.
+            -- fst = damage, snd = position of the explosion.
+            -- `snd` could be used to implement knock-back.
+            explosionsHit = mapMaybe f explosions
+              where
+                blastDamage = 200
+                blastRadius = 50
+
+                f :: LevelEntity -> Maybe (Float, Vec2)
+                f e
+                  | dmg > 0 = Just (dmg, position e)
+                  | otherwise = Nothing
+                  where
+                    dmg = max 0 $ (1 - (dist / blastRadius)) * blastDamage
+                    dist = euclideanDistance (position e) (position enemy)
+
+            explosions = filter isExplosion lvlEntities
+              where
+                isExplosion (LevelEntity (ExplosionEntity DamageExplosion _ 0) _ _ _) = True
+                isExplosion _ = False
 
             speed = enemySpeed (enemyType enemy)
             acceleration = speed / 4

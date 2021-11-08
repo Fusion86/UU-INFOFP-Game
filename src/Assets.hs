@@ -23,7 +23,7 @@ loadAssets f = do
 
   -- Load character sheets
   playerCharacterSheet <- loadPlayerCharacterSheet (f </> "PlayerCharacterSheet.png")
-  fxCharacterSheet <- loadFxCharacterSheet (f </> "FxSheet.png")
+  fxCharacterSheet <- loadFxSheet (f </> "FxSheet.png")
   enemyCharacterSheet <- loadEnemyCharacterSheet (f </> "ObjectsAndEnemies.png")
 
   return $ dbg "Loaded assets" $ Assets assets playerCharacterSheet fxCharacterSheet enemyCharacterSheet
@@ -63,8 +63,8 @@ loadPlayerCharacterSheet f = do
         playerWalkRight = map (`f` 53) [1, 37 .. 253]
         playerWalkLeft = map (`f` 79) [1, 37 .. 253]
 
-loadFxCharacterSheet :: FilePath -> IO FxSheet
-loadFxCharacterSheet f = do
+loadFxSheet :: FilePath -> IO FxSheet
+loadFxSheet f = do
   x <- readImage f
   case x of
     Left err -> error err
@@ -73,6 +73,7 @@ loadFxCharacterSheet f = do
         FxSheet
           playerBullets
           playerBulletImpact
+          explosions
       where
         img = convertRGBA8 dynImg
         f :: Int -> Int -> Int -> Int -> Picture
@@ -80,6 +81,7 @@ loadFxCharacterSheet f = do
 
         playerBullets = [f 2 2 6 6, f 12 2 6 6, f 23 3 4 4]
         playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
+        explosions = map (\x -> f x 67 22 22) [1, 25 .. 169]
 
 loadEnemyCharacterSheet :: FilePath -> IO EnemyCharacterSheet
 loadEnemyCharacterSheet f = do
