@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import os
 import shutil
 import subprocess
 import statistics
 from pathlib import Path
 from datetime import datetime
+from tabulate import tabulate
 
 GAME_BIN = "./UU-INFOFP-Game-exe"
 
@@ -13,7 +16,7 @@ if __name__ == "__main__":
         exit(1)
 
     temp_dir = Path("./tmp")
-    results_dir = Path("./benchmark", datetime.today().strftime("%Y-%m-%d %H:%M:%S"))
+    results_dir = Path("./benchmark", datetime.today().strftime("%Y-%m-%d_%H:%M:%S"))
 
     # Run neofetch
     neofetch = subprocess.run(["neofetch", "--stdout"], stdout=subprocess.PIPE)
@@ -61,8 +64,22 @@ if __name__ == "__main__":
                 frametimes.append(float(line))
             except:
                 pass
+    
+    # Sort descending for easier selection of worst frametimes
+    frametimes.sort(reverse=True)
 
+    # Make a table of data
+    file_contents = [
+        ["mean frametime", statistics.mean(frametimes), "milliseconds"],
+        ["lowest frametime", min(frametimes), "milliseconds"],
+        ["highest frametime", max(frametimes), "milliseconds"],
+        ["average framerate", 1000/statistics.mean(frametimes), "frames per second"],
+        ["1% low", 1000/statistics.mean(frametimes[0:(len(frametimes)//100)]), "frames per second"],
+        ["0.1% low", 1000/statistics.mean(frametimes[0:(len(frametimes)//1000)]), "frames per second"],
+    ]
+
+    headers = ["statistic","value","unit"]
+
+    # Format table and write to file
     with open(results_dir / "report.txt", "w") as f:
-        f.write("mean frametime: {}\n".format(statistics.mean(frametimes)))
-        f.write("lowest frametime: {}\n".format(min(frametimes)))
-        f.write("highest frametime: {}\n".format(max(frametimes)))
+        f.write(tabulate(file_contents, floatfmt=".3f", headers=headers))
