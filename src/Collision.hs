@@ -50,3 +50,8 @@ linesIntersect ((x1, y1), (x2, y2)) ((x3, y3), (x4, y4))
   where
     uA = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
     uB = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+
+getBulletHitboxRay :: Float -> LevelEntity -> Line
+getBulletHitboxRay d entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy)) =
+  (pos, (x + vx * d, y + vy * d))
+getBulletHitboxRay _ _ = error "not a bullet"

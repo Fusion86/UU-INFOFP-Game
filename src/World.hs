@@ -76,35 +76,42 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
             -- Default
             _ -> s
     -- End of level menu, should show score etc.
-    EndOfLevel -> s
+    EndOfLevel gp ->
+      let (activatedItem, s) = updateMenuScene 1 d w
+       in case activatedItem of
+            Just 0 -> initMainMenu
+            _ -> s
 -- Gameplay
 -- NOTE: "lens/optics provide a language to do this pattern matching." -- dminuoso
-updateScene _ d' w@(World s@Gameplay {} _)
+updateScene _ d' w@(World s@(Gameplay gp) _)
   | MenuBack `elem` events i = createMenu PauseMenu (Just s)
-  | otherwise = s {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
+  | transCountdown < 0 = initEndOfLevel gp
+  | playerHealth newPlayer <= 0 = Gameplay gp {levelInstance = newLevelInstance, transitionCountdown = transCountdown - d, player = pl {playerHealth = 0}}
+  | otherwise = Gameplay gp {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
   where
     i = input w
-    pt = playTime $ scene w
-    pl = player $ scene w
+    pt = playTime gp
+    pl = player gp
     (mx, my) = pointer $ input w
     (x, y) = center pl
     (vx, vy) = playerVelocity pl
     state = playerState pl
-    lvlInst = levelInstance s
+    lvlInst = levelInstance gp
     lvlEntities = levelEntities lvlInst
-    lvlObjs = levelObjects $ level $ levelInstance s
+    lvlObjs = levelObjects $ level $ levelInstance gp
     shootCooldown = playerShootCooldown pl
     selectedWeapon = playerSelectedWeapon pl
     colliders = collisionObjects lvlObjs
+    transCountdown = transitionCountdown gp
 
     d
       | debugMode i = d' * timeMultiplier i
       | otherwise = d'
 
-    newPlayer = (updatePlayer d w s) {playerShootCooldown = newShootCooldown}
+    newPlayer = (updatePlayer d w gp) {playerShootCooldown = newShootCooldown}
 
     shouldShootNewBullet :: Bool
-    shouldShootNewBullet = isKeyDown i (MouseButton LeftButton) && shootCooldown == 0
+    shouldShootNewBullet = isKeyDown i (MouseButton LeftButton) && shootCooldown == 0 && playerHealth newPlayer > 0
 
     newShootCooldown :: Float
     newShootCooldown
@@ -119,10 +126,16 @@ updateScene _ d' w@(World s@Gameplay {} _)
         }
       where
         newLevelEntities :: [LevelEntity]
-        newLevelEntities
-          | shouldShootNewBullet = newBullet : lvlEntities
-          | otherwise = lvlEntities
+        newLevelEntities = concat [newBulletList, lvlEntities, playerDmgList, playerDeathList]
           where
+            -- Kinda shitty, but it works.
+            playerDmgList = [playerDamageEntity | playerHealth pl > 0 && playerHealth newPlayer < playerHealth pl]
+            playerDeathList = dbg "death" [playerDeathEntity | playerHealth pl > 0 && playerHealth newPlayer <= 0]
+            newBulletList = [newBullet | shouldShootNewBullet]
+
+            playerDamageEntity = LevelEntity (EffectEntity PlayerDamage 0.15 0) (x, y) (0, 0) (0, 0)
+            playerDeathEntity = LevelEntity (EffectEntity PlayerDeath 0.7 0) (x, y) (0, 0) (0, 0)
+
             newBullet = LevelEntity (Bullet selectedWeapon (x, y) (x, y) bulletTravelDist) (x, y) (0, 0) (dx * speed, dy * speed)
             (totalDistX, totalDistY) = (mx - x, my - y)
             f = sqrt (totalDistX ** 2 + totalDistY ** 2)
@@ -144,10 +157,10 @@ updateScene _ d' w@(World s@Gameplay {} _)
           x > -10 && x < gameWidth + 10 && y > -10 && y < gameHeight + 10
 
         updateEntity :: LevelEntity -> Maybe LevelEntity
-        updateEntity entity@(LevelEntity (ExplosionEntity explosionType totalLifetime lifetime) _ _ _)
+        updateEntity entity@(LevelEntity (EffectEntity fxType totalLifetime lifetime) _ _ _)
           -- Destroy explosion when it is older than the totalLifetime
           | newLifetime > totalLifetime = Nothing
-          | otherwise = Just $ entity {entityType = ExplosionEntity explosionType totalLifetime newLifetime}
+          | otherwise = Just $ entity {entityType = EffectEntity fxType totalLifetime newLifetime}
           where
             newLifetime = lifetime + d
         updateEntity entity@(LevelEntity b@Bullet {bulletType = t} pos@(x, y) size (vx, vy))
@@ -172,8 +185,8 @@ updateScene _ d' w@(World s@Gameplay {} _)
         createExplosion wpn pos = LevelEntity explosion pos (0, 0) (0, 0)
           where
             explosion
-              | wpn == RocketLauncher = ExplosionEntity DamageExplosion 0.3 0
-              | otherwise = ExplosionEntity BulletImpact 0.15 0
+              | wpn == RocketLauncher = EffectEntity DamageExplosion 0.3 0
+              | otherwise = EffectEntity BulletImpact 0.15 0
 
         createExplosionAtTravelDist :: WeaponType -> LevelEntity -> LevelEntity
         createExplosionAtTravelDist wpn (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
@@ -269,7 +282,7 @@ updateScene _ d' w@(World s@Gameplay {} _)
 
             explosions = filter isExplosion lvlEntities
               where
-                isExplosion (LevelEntity (ExplosionEntity DamageExplosion _ 0) _ _ _) = True
+                isExplosion (LevelEntity (EffectEntity DamageExplosion _ 0) _ _ _) = True
                 isExplosion _ = False
 
             speed = enemySpeed (enemyType enemy)
@@ -316,8 +329,3 @@ updateScene levels d (World b@(Benchmark w rt) _)
         benchmarkRemainingTime = rt - d
       }
   | otherwise = unsafePerformIO (putStrLn "[Benchmark End]" >>= const exitSuccess)
-
-getBulletHitboxRay :: Float -> LevelEntity -> Line
-getBulletHitboxRay d entity@(LevelEntity t@Bullet {} pos@(x, y) size (vx, vy)) =
-  (pos, (x + vx * d, y + vy * d))
-getBulletHitboxRay _ _ = error "not a bullet"

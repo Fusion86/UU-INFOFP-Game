@@ -9,14 +9,14 @@ import Input
 import Levels
 import Model
 
-updatePlayer :: Float -> World -> Scene -> Player
+updatePlayer :: Float -> World -> GameplayScene -> Player
 updatePlayer d w s
   -- Change state to IdleState when the player hasn't moved.
   | newPlayerPosition == (x, y) = newPlBase {playerState = IdleState}
   | otherwise = newPlBase {playerPosition = newPlayerPosition, playerState = MovingState}
   where
     i = input w
-    pl = player $ scene w
+    pl = player s
     (mx, my) = pointer $ input w
     (x, y) = playerPosition pl
     (vx, vy) = playerVelocity pl
@@ -24,12 +24,21 @@ updatePlayer d w s
     lvlInst = levelInstance s
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level lvlInst
-
-    -- New player base, each update cycle these are the properties that always update, unrelated to player position etc.
-    newPlBase = pl {playerVelocity = newVelocity, playerSelectedWeapon = selectedWeapon}
+    enemies = levelEnemies lvlInst
 
     -- Constants
     playerSize = size pl
+
+    -- New player base, each update cycle these are the properties that always update, unrelated to player position etc.
+    newPlBase = pl {playerHealth = newHp, playerVelocity = newVelocity, playerSelectedWeapon = selectedWeapon}
+
+    newHp = playerHealth pl - (enemiesDamage + environmentalDamage) * d
+      where
+        enemiesDamage = sum $ map (enemyDamage . enemyType) enemiesIntersecting
+        enemiesIntersecting = filter (intersects pl) enemies
+
+        environmentalDamage = sum $ map environmentDamage environmentalDamageIntersecting
+        environmentalDamageIntersecting = filter (\o -> objectName o == "Damage" && intersects pl o) lvlObjs
 
     selectedWeapon
       | isKeyDown i (Char '1') = AssaultRifle

@@ -38,22 +38,27 @@ data Scene
         -- | Index of the selected menu item. Has to be an Int because the range is not known at compile time.
         selectedItem :: Int
       }
-  | Gameplay
-      { -- | An instance of the level which is currently being played.
-        levelInstance :: LevelInstance,
-        -- | The current player. The player is not stored inside the LevelInstance because the player is supposed to carry over their upgrades, ammo, etc when moving between maps.
-        player :: Player,
-        -- | Play time in seconds.
-        playTime :: Float
-      }
+  | Gameplay GameplayScene
   | Benchmark
       { benchmarkWorld :: World,
         benchmarkRemainingTime :: Float
       }
   deriving (Show)
 
-data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel
-  deriving (Show, Eq)
+data GameplayScene = GameplayScene
+  { -- | An instance of the level which is currently being played.
+    levelInstance :: LevelInstance,
+    -- | The current player. The player is not stored inside the LevelInstance because the player is supposed to carry over their upgrades, ammo, etc when moving between maps.
+    player :: Player,
+    -- | Play time in seconds.
+    playTime :: Float,
+    -- | Countdown after the player dies, when this reaches zero we transition to the end of level scene.
+    transitionCountdown :: Float
+  }
+  deriving (Show)
+
+data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel GameplayScene
+  deriving (Show)
 
 data Input = Input
   { -- | A set of the keys currently being pressed.
@@ -176,12 +181,14 @@ data EntityType
         bulletPrevPosition :: Vec2,
         bulletTravelDistance :: Float
       }
-  | ExplosionEntity ExplosionType Float Float
+  | EffectEntity EffectEntityType Float Float
   deriving (Show, Eq)
 
-data ExplosionType
+data EffectEntityType
   = BulletImpact
   | DamageExplosion
+  | PlayerDamage
+  | PlayerDeath
   deriving (Show, Eq)
 
 data LevelObjectProperty = SpawnChance deriving (Show, Eq, Ord)
@@ -215,6 +222,8 @@ data EnemyCharacterSheet = EnemyCharacterSheet
 data FxSheet = FxSheet
   { playerBullets :: [Picture],
     playerBulletImpact :: [Picture],
+    playerDamageImpact :: [Picture],
+    playerDeath :: [Picture],
     explosions :: [Picture]
   }
   deriving (Show)
@@ -301,6 +310,9 @@ createMenu m p = MenuScene m p 0
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
+initEndOfLevel :: GameplayScene -> Scene
+initEndOfLevel gp = createMenu (EndOfLevel gp) Nothing
+
 createLevelInstance :: Level -> LevelInstance
 createLevelInstance l = LevelInstance l [] enemies 0
   where
@@ -312,7 +324,7 @@ createLevelInstance l = LevelInstance l [] enemies 0
     newEnemy x = EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
 
 createGameplay :: Level -> Player -> Scene
-createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
+createGameplay l p = Gameplay $ GameplayScene (createLevelInstance l) newPlayer 0 2
   where
     newPlayer
       | Just spawnPos <- playerSpawnPos = p {playerPosition = spawnPos}
@@ -333,7 +345,10 @@ enemySpeed :: EnemyType -> Float
 enemySpeed = const 50
 
 enemySize :: EnemyType -> Vec2
-enemySize _ = (14, 14)
+enemySize = const (14, 14)
+
+enemyDamage :: EnemyType -> Float
+enemyDamage = const 100
 
 gravity :: Float
 gravity = 10
@@ -346,3 +361,6 @@ gameHeight = 336 -- 8 * 42
 
 truncVec2 :: Vec2 -> Vec2
 truncVec2 (x, y) = (fromIntegral $ truncate x, fromIntegral $ truncate y)
+
+environmentDamage :: LevelObject -> Float
+environmentDamage = const 100

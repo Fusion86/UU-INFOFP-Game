@@ -85,28 +85,32 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
       ]
   where
     selectedLevel = l !! selectedItem
-renderWorld a f t _ w@(World (Gameplay levelInstance pl pt) i) = do
-  let (bg, fg) = renderLevel pt a t (level levelInstance)
+renderWorld a f t _ w@(World (Gameplay gp@GameplayScene {}) i) = do
+  let (bg, fg) = renderLevel pt a t (level lvlInst)
   hud <- renderHud pt a f pl
   return $
     pictures
       [ bg,
-        renderEnemies pt a (levelEnemies levelInstance),
-        renderEntities a (levelEntities levelInstance),
+        renderEnemies pt a (levelEnemies lvlInst),
         renderPlayer pt a w pl,
         fg,
+        renderEntities a (levelEntities lvlInst),
         hud,
         renderCursor a w,
         debugOverlay
       ]
   where
+    lvlInst = levelInstance gp
+    pt = playTime gp
+    pl = player gp
+
     debugOverlay
       | debugMode i =
         pictures $
           [renderDebugOverlay w, renderObjDebugOverlay pl]
-            ++ map renderObjDebugOverlay (levelEntities levelInstance)
-            ++ map renderObjDebugOverlay (levelEnemies levelInstance)
-            ++ map renderObjDebugOverlay (levelObjects (level levelInstance))
+            ++ map renderObjDebugOverlay (levelEntities lvlInst)
+            ++ map renderObjDebugOverlay (levelEnemies lvlInst)
+            ++ map renderObjDebugOverlay (levelObjects (level lvlInst))
       | otherwise = blank
 renderWorld _ f _ _ (World (MenuScene PauseMenu _ selectedItem) _) = do
   pausedTxt <- renderStringCenter f white "Game Paused"
@@ -130,9 +134,18 @@ renderWorld a f t levels w@(World (Benchmark benchWorld rt) i) = do
       [ benchWorld,
         renderList (8, 8) 12 txts
       ]
-renderWorld _ f _ _ _ = do
-  str <- renderStringCenter f red "Scene not implemented"
-  return $ setPos (288, 160) str
+renderWorld _ f _ _ w@(World (MenuScene (EndOfLevel gp) _ selectedItem) _) = do
+  endTxt <- renderStringCenter f white "You Died"
+  menuTxts <- renderMenuItems f selectedItem ["Quit"]
+  return $
+    pictures
+      [ setPos (288, 96) endTxt,
+        renderList (288, 188) 12 menuTxts
+      ]
+
+-- renderWorld _ f _ _ _ = do
+--   str <- renderStringCenter f red "Scene not implemented"
+--   return $ setPos (gameWidth / 2, gameHeight / 2) str
 
 renderMenuItems :: Font -> Int -> [String] -> IO [Picture]
 renderMenuItems font selectedIndex xs = sequence (helper 0 xs)
@@ -237,9 +250,10 @@ renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ i) = setPos (pointer i) $ getImageAsset a "Cursor"
 
 renderPlayer :: Float -> Assets -> World -> Player -> Picture
-renderPlayer ft a w p =
+renderPlayer ft a w p
   -- Small offset because the player bounding box is not the same size as the texture.
-  setPos (x, y - 4) pic
+  | playerHealth p > 0 = setPos (x, y - 4) pic
+  | otherwise = blank
   where
     (mx, my) = pointer $ input w
     (x, y) = center p
@@ -270,12 +284,15 @@ renderEntities a = pictures . map renderEntity
     getEntityPicture :: EntityType -> Picture
     getEntityPicture Bullet {bulletType = PeaShooter} = playerBullets fx !! 2
     getEntityPicture Bullet {} = playerBullets fx !! 0
-    getEntityPicture (ExplosionEntity t totalLifetime lifetime) = frame
+    getEntityPicture (EffectEntity t totalLifetime lifetime) = frame
       where
         frame
           | t == DamageExplosion = explosions (fxSheet a) !! getFrame 8
+          | t == PlayerDamage = playerDamageImpact (fxSheet a) !! getFrame 2
+          | t == PlayerDeath = playerDeath (fxSheet a) !! getFrame 7
           | otherwise = playerBulletImpact (fxSheet a) !! getFrame 3
 
+        -- Get frame count based on how far in the fx's lifetime we are. Arg = total frames.
         getFrame :: Int -> Int
         getFrame i = min (i - 1) $ floor $ (1 - (totalLifetime - lifetime) / totalLifetime) * fromIntegral i
     getEntityPicture _ = renderDbgString red "entity not implemented"
@@ -302,7 +319,7 @@ renderEnemies ft a = pictures . map renderEnemy
 
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture
 renderHud pt a f pl = do
-  hpTxt <- renderString f white "HP: 100/100"
+  hpTxt <- renderString f white ("HP: " ++ show (round hp) ++ "/" ++ show (round maxHp))
   wpn1Txt <- renderString f (getColor AssaultRifle) "1. Rifle"
   wpn2Txt <- renderString f (getColor PeaShooter) "2. Peanuts"
   wpn3Txt <- renderString f (getColor SniperRifle) "3. Sniper"
@@ -319,6 +336,8 @@ renderHud pt a f pl = do
       ]
   where
     selectedWeapon = playerSelectedWeapon pl
+    hp = playerHealth pl
+    maxHp = playerMaxHealth pl
 
     getColor wpn
       | wpn == selectedWeapon = red
@@ -328,7 +347,7 @@ renderDebugOverlay :: World -> Picture
 renderDebugOverlay (World s i) =
   setPos (10, 10) $ renderDbgString green $ "timeMultiplier: " ++ show (timeMultiplier i) ++ extra s
   where
-    extra (Gameplay _ _ pt) = " playTime: " ++ printf "%0.2f" pt
+    extra (Gameplay gp) = " playTime: " ++ printf "%0.2f" (playTime gp)
     extra _ = ""
 
 renderObjDebugOverlay :: Object2D a => a -> Picture

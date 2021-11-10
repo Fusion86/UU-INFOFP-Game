@@ -73,6 +73,8 @@ loadFxSheet f = do
         FxSheet
           playerBullets
           playerBulletImpact
+          playerDamageImpact
+          playerDeath
           explosions
       where
         img = convertRGBA8 dynImg
@@ -81,6 +83,8 @@ loadFxSheet f = do
 
         playerBullets = [f 2 2 6 6, f 12 2 6 6, f 23 3 4 4]
         playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
+        playerDamageImpact = map (\x -> f x 35 12 12) [15, 29 .. 29]
+        playerDeath = map (\x -> f x 237 48 48) [1, 51 .. 301]
         explosions = map (\x -> f x 67 22 22) [1, 25 .. 169]
 
 loadEnemyCharacterSheet :: FilePath -> IO EnemyCharacterSheet
