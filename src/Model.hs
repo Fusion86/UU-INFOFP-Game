@@ -224,7 +224,8 @@ data FxSheet = FxSheet
     playerBulletImpact :: [Picture],
     playerDamageImpact :: [Picture],
     playerDeath :: [Picture],
-    explosions :: [Picture]
+    explosions :: [Picture],
+    fireball :: [Picture]
   }
   deriving (Show)
 

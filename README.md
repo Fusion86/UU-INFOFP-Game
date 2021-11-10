@@ -107,6 +107,11 @@ Properties are case sensitive and optional, unless noted otherwise.
 
 ### Level Objects
 
+#### Player spawn Object
+
+- Name: PlayerSpawn
+- Behavior: The player will spawn at its location.
+
 #### Collision Object
 
 - Name: Collision
@@ -117,17 +122,23 @@ Properties are case sensitive and optional, unless noted otherwise.
 - Name: EnemyCollision
 - Behavior: Only enemies collide with this object.
 
+#### Damage Object
+
+- Name: Damage
+- Behavior: The player will get a set amount of damage each tick when they touch this object.
+
 #### Death Object
 
 - Name: Death
-- Behavior: The player and enemies will die when they touch this object. Not yet implemented.
+- Behavior: The player will die when they touch this object.
 
 #### Enemy Spawner Object
 
 - Name: EnemySpawner
 - Properties:
   - Type: Enemy type. Possible values: `Crab`. Not yet implemented.
-- Behavior: Will spawn an enemy once (or infinitely idk yet).
+  - Chance: Number "0" to "100" (as a string) how likely it is an enemy will spawn. An enemy will spawn at least once regardless of this value.
+- Behavior: Will spawn an enemy once at the level start, and based on chance every second.
 
 ## Credits
 

@@ -38,10 +38,11 @@ renderDbgString clr str =
 floorF :: Float -> Float
 floorF = fromIntegral . floor
 
--- Taken from https://stackoverflow.com/a/46414344/2125072
--- TODO: I didn't actually check whether this works.
-stdev :: [Float] -> Float
-stdev xs = sqrt . average . map ((^ 2) . (-) axs) $ xs
-  where
-    average = (/) <$> sum <*> realToFrac . length
-    axs = average xs
+-- | This function returns a number between 0 and `frameCount`, based on the fractional of the time.
+-- If `speed` is higher than `frameCount` this function will cycle through each frame multiple times a second.
+--
+-- Example
+-- time = 0, returns 0
+-- where time = 0.999... returns `frameCount`
+timeToFrame :: Float -> Float -> Int -> Int
+timeToFrame time speed frameCount = floor ((time - fromIntegral (floor time)) * speed) `mod` frameCount

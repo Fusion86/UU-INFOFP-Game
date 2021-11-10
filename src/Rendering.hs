@@ -94,7 +94,7 @@ renderWorld a f t _ w@(World (Gameplay gp@GameplayScene {}) i) = do
         renderEnemies pt a (levelEnemies lvlInst),
         renderPlayer pt a w pl,
         fg,
-        renderEntities a (levelEntities lvlInst),
+        renderEntities pt a (levelEntities lvlInst),
         hud,
         renderCursor a w,
         debugOverlay
@@ -244,7 +244,7 @@ animateTile ft i
     t = round ft
 
     -- Laser t, magic numbers.
-    lt = floor ((ft - fromIntegral (floor ft)) * 3) `mod` 2
+    lt = timeToFrame ft 3 2
 
 renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ i) = setPos (pointer i) $ getImageAsset a "Cursor"
@@ -273,8 +273,8 @@ renderPlayer ft a w p
         frame :: Int
         frame = floor $ (ft - fromIntegral (floor ft)) * 8
 
-renderEntities :: Assets -> [LevelEntity] -> Picture
-renderEntities a = pictures . map renderEntity
+renderEntities :: Float -> Assets -> [LevelEntity] -> Picture
+renderEntities ft a = pictures . map renderEntity
   where
     fx = fxSheet a
 
@@ -283,7 +283,12 @@ renderEntities a = pictures . map renderEntity
 
     getEntityPicture :: EntityType -> Picture
     getEntityPicture Bullet {bulletType = PeaShooter} = playerBullets fx !! 2
-    getEntityPicture Bullet {} = playerBullets fx !! 0
+    getEntityPicture Bullet {bulletType = RocketLauncher} = fireballPicture 0
+      where
+        fireballPicture :: Int -> Picture
+        fireballPicture dir = fireball fx !! (frame + (dir * 2))
+        frame = timeToFrame ft 8 2
+    getEntityPicture Bullet {} = head (playerBullets fx)
     getEntityPicture (EffectEntity t totalLifetime lifetime) = frame
       where
         frame
@@ -314,7 +319,7 @@ renderEnemies ft a = pictures . map renderEnemy
           | otherwise = crabIdle sheet
           where
             frame :: Int
-            frame = floor ((ft - fromIntegral (floor ft)) * 6) `mod` 3 -- Length of crabWalkRight and crabWalkLeft
+            frame = timeToFrame ft 6 3 -- Length of crabWalkRight and crabWalkLeft
         getEnemyPicture _ = renderDbgString red "entity not implemented"
 
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture
