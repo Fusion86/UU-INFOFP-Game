@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="72" height="42" tilewidth="8" tileheight="8" infinite="0" nextlayerid="3" nextobjectid="6">
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="72" height="42" tilewidth="8" tileheight="8" infinite="0" nextlayerid="3" nextobjectid="7">
  <editorsettings>
-  <export target="../../assets/levels/AnimationTest.xml" format="tmx"/>
+  <export target="../../assets/levels/TestLevel2.xml" format="tmx"/>
  </editorsettings>
  <properties>
   <property name="Background" value="TestLevel2Bg"/>
@@ -60,5 +60,6 @@
   <object id="3" name="Collision" x="360" y="192" width="48" height="48"/>
   <object id="4" name="Collision" x="408" y="104" width="48" height="48"/>
   <object id="5" name="Collision" x="320" y="288" width="256" height="48"/>
+  <object id="6" name="PlayerSpawn" x="24" y="216"/>
  </objectgroup>
 </map>

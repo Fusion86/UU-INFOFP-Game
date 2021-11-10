@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="72" height="42" tilewidth="8" tileheight="8" infinite="0" nextlayerid="5" nextobjectid="6">
+<map version="1.5" tiledversion="1.7.2" orientation="orthogonal" renderorder="right-down" width="72" height="42" tilewidth="8" tileheight="8" infinite="0" nextlayerid="5" nextobjectid="7">
  <editorsettings>
-  <export target="../../assets/levels/IntroScene.xml" format="tmx"/>
+  <export target="../../assets/levels/RipFps.xml" format="tmx"/>
  </editorsettings>
  <properties>
   <property name="Name" value="RIP FPS"/>
@@ -53,12 +53,6 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="4" name="Object Layer 1">
-  <object id="1" name="Collision" x="0" y="0" width="480" height="24"/>
-  <object id="2" name="Collision" x="0" y="24" width="24" height="272"/>
-  <object id="4" name="Collision" x="456" y="24" width="24" height="272"/>
-  <object id="5" name="Collision" x="0" y="296" width="480" height="24"/>
- </objectgroup>
  <layer id="2" name="Background" width="72" height="42">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -151,4 +145,11 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
+ <objectgroup id="4" name="Object Layer 1">
+  <object id="1" name="Collision" x="0" y="0" width="480" height="24"/>
+  <object id="2" name="Collision" x="0" y="24" width="24" height="272"/>
+  <object id="4" name="Collision" x="456" y="24" width="24" height="272"/>
+  <object id="5" name="Collision" x="0" y="296" width="480" height="24"/>
+  <object id="6" name="PlayerSpawn" x="48" y="272"/>
+ </objectgroup>
 </map>

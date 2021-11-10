@@ -1,5 +1,7 @@
 module Model where
 
+import Common
+import Data.List (find)
 import Data.Map (Map, empty)
 import qualified Data.Set as S (Set, empty)
 import Graphics.Gloss (Picture)
@@ -291,7 +293,7 @@ initInput :: Input
 initInput = Input S.empty [] (0, 0) False 1 gameWidth gameHeight 1 True
 
 initPlayer :: Player
-initPlayer = Player 100 100 50 8 empty AssaultRifle 0 (100, 100) (0, 0) IdleState
+initPlayer = Player 100 100 50 8 empty AssaultRifle 0 (0, 0) (0, 0) IdleState
 
 createMenu :: MenuType -> Maybe Scene -> Scene
 createMenu m p = MenuScene m p 0
@@ -312,8 +314,15 @@ createLevelInstance l = LevelInstance l [] enemies 0
 createGameplay :: Level -> Player -> Scene
 createGameplay l p = Gameplay (createLevelInstance l) newPlayer 0
   where
-    -- TODO: Set player position to the spawn position in the level.
-    newPlayer = p
+    newPlayer
+      | Just spawnPos <- playerSpawnPos = p {playerPosition = spawnPos}
+      | otherwise =
+        trace "No PlayerSpawn defined, using default values of (100,100)" $
+          p {playerPosition = (100, 100)}
+
+    playerSpawnPos = do
+      spawnObj <- find ((==) "PlayerSpawn" . objectName) (levelObjects l)
+      return $ position spawnObj
 
 createBenchmark :: Level -> Scene
 createBenchmark l = Benchmark (World (createGameplay l dummyPlayer) initInput) 30
