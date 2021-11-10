@@ -70,9 +70,10 @@ if __name__ == "__main__":
 
     # Make a table of data
     file_contents = [
-        ["mean frametime", statistics.mean(frametimes), "milliseconds"],
+        ["average frametime", statistics.mean(frametimes), "milliseconds"],
         ["lowest frametime", min(frametimes), "milliseconds"],
         ["highest frametime", max(frametimes), "milliseconds"],
+        ["stdev frametime", statistics.stdev(frametimes), "milliseconds"],
         ["average framerate", 1000/statistics.mean(frametimes), "frames per second"],
         ["1% low", 1000/statistics.mean(frametimes[0:(len(frametimes)//100)]), "frames per second"],
         ["0.1% low", 1000/statistics.mean(frametimes[0:(len(frametimes)//1000)]), "frames per second"],
