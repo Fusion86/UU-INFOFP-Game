@@ -32,8 +32,12 @@ updatePlayer d w s
     -- New player base, each update cycle these are the properties that always update, unrelated to player position etc.
     newPlBase = pl {playerHealth = newHp, playerVelocity = newVelocity, playerSelectedWeapon = selectedWeapon}
 
-    newHp = playerHealth pl - (enemiesDamage + environmentalDamage) * d
+    newHp
+      | touchesInstaDeath = 0
+      | otherwise = playerHealth pl - (enemiesDamage + environmentalDamage) * d
       where
+        touchesInstaDeath = any (\o -> objectName o == "Death" && intersects pl o) lvlObjs
+
         enemiesDamage = sum $ map (enemyDamage . enemyType) enemiesIntersecting
         enemiesIntersecting = filter (intersects pl) enemies
 
