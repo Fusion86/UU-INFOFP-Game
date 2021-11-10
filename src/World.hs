@@ -130,7 +130,7 @@ updateScene _ d' w@(World s@(Gameplay gp) _)
           where
             -- Kinda shitty, but it works.
             playerDmgList = [playerDamageEntity | playerHealth pl > 0 && playerHealth newPlayer < playerHealth pl]
-            playerDeathList = dbg "death" [playerDeathEntity | playerHealth pl > 0 && playerHealth newPlayer <= 0]
+            playerDeathList = [playerDeathEntity | playerHealth pl > 0 && playerHealth newPlayer <= 0]
             newBulletList = [newBullet | shouldShootNewBullet]
 
             playerDamageEntity = LevelEntity (EffectEntity PlayerDamage 0.15 0) (x, y) (0, 0) (0, 0)
