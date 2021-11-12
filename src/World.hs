@@ -1,21 +1,18 @@
 module World (updateWorld) where
 
-import Assets
 import Collision
 import Common
 import Control.Monad.Random (Rand, RandomGen, evalRand, getRandomR, mkStdGen)
-import Coordinates
+import qualified Control.Monad.Random as Rng (uniform)
 import Data.List (find)
 import Data.Map (lookup)
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Set (empty, member)
 import Graphics.Gloss.Interface.IO.Game
 import Input
-import Levels
 import Menu
 import Model
 import Player
-import Rendering
 import SDL.Font (Font)
 import System.Exit (exitSuccess)
 import System.IO.Unsafe (unsafePerformIO)
@@ -118,6 +115,8 @@ updateScene _ d' w@(World s@(Gameplay gp) _)
       | shouldShootNewBullet = weaponShootCooldown selectedWeapon
       | otherwise = max 0 $ shootCooldown - d
 
+    instaDeathObjects = filter (\o -> objectName o == "Death") lvlObjs
+
     newLevelInstance =
       lvlInst
         { levelEntities = filter entityInsideLevel $ mapMaybe updateEntity newLevelEntities,
@@ -218,17 +217,18 @@ updateScene _ d' w@(World s@(Gameplay gp) _)
               | shouldSpawnEnemies = catMaybes $ evalRand (mapM spawnMaybe spawners) (mkStdGen $ floor pt)
               | otherwise = []
 
-            spawnMaybe :: (RandomGen g) => LevelObject -> Rand g (Maybe EnemyInstance)
+            spawnMaybe :: RandomGen g => LevelObject -> Rand g (Maybe EnemyInstance)
             spawnMaybe x = do
               -- This is our RandomGen monad
               rng <- getRandomR (0, 100)
+              direction <- Rng.uniform [(100, 0), (0, 100)]
               return
                 ( -- This is our Maybe monad
                   do
                     -- Chance is an optional property. If it is missing then just abort (aka return Nothing).
                     chance <- lookup SpawnChance (objectProperties x)
                     if (read chance :: Int) > rng
-                      then return $ EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
+                      then return $ EnemyInstance CrabEnemy 100 (objectPosition x) direction IdleState
                       else Nothing
                 )
 
@@ -243,6 +243,7 @@ updateScene _ d' w@(World s@(Gameplay gp) _)
             size@(w, h) = enemySize (enemyType enemy)
 
             newHp
+              | any (intersects enemy) instaDeathObjects = 0
               -- TODO: This uses hardcoded damage values.
               -- example: | Just bullet <- enemyHitByBullet = hp - (weaponDamage bullet)
               -- ... ^ this won't work because the bullet type is trash (just like this language).

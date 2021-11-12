@@ -3,7 +3,11 @@ module Rendering where
 import Assets
 import Colors
 import Common
+import Control.Monad.Extra (concatMapM)
+import Control.Monad.Random (Rand, RandomGen, evalRand, getRandomR, mkStdGen)
+import qualified Control.Monad.Random as Rng (fromList, uniform)
 import Coordinates
+import Data.Functor ((<&>))
 import Data.Map (lookup)
 import Data.Text (pack)
 import Data.Word (Word8)
@@ -23,8 +27,6 @@ import Graphics.Gloss
   )
 import Graphics.Gloss.Interface.IO.Interact (Key (SpecialKey), SpecialKey (KeyF1))
 import Graphics.Gloss.SDL.Surface (CacheTexture (..), bitmapOfSurface, withSdlSurface)
-import Input
-import Levels
 import Model
 import SDL.Font (Font, solid)
 import SDL.Vect (V4 (..))
@@ -190,59 +192,69 @@ renderList start spacing = pictures . helper start
 
 renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
 renderLevel ft a tileSet (Level name background foreground layers objects) =
-  (renderedBackground, renderedForeground)
+  evalRand
+    ( do
+        bg <- renderedBackground
+        fg <- renderedForeground
+        return (bg, fg)
+    )
+    -- We can't update our state inside the render function, which means we have to create a new generator each time.
+    -- This generator seed changes every second, this is the wanted behavior!
+    -- This also means that our random animations have a FPS of 1, which is what we want.
+    (mkStdGen $ floor ft)
   where
-    renderLayer :: TileLayer -> [Picture]
+    renderLayer :: RandomGen g => TileLayer -> Rand g [Picture]
     renderLayer = renderTileGrid ft tileSet . tileGrid
 
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
     renderedBackground
-      | Just bgImage <- background = pictures $ getImageAsset a bgImage : rest
-      | otherwise = pictures rest
+      | Just bgImage <- background = rest <&> pictures . (getImageAsset a bgImage :)
+      | otherwise = rest <&> pictures
       where
-        rest = concatMap renderLayer bgLayers
+        rest = concatMapM renderLayer bgLayers
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
     renderedForeground
-      | Just fgImage <- foreground = pictures $ getImageAsset a fgImage : rest
-      | otherwise = pictures rest
+      | Just fgImage <- foreground = rest <&> pictures . (getImageAsset a fgImage :)
+      | otherwise = rest <&> pictures
       where
-        rest = concatMap renderLayer fgLayers
+        rest = concatMapM renderLayer fgLayers
 
-renderTileGrid :: Float -> TileSet -> TileGrid -> [Picture]
-renderTileGrid ft _ [] = []
-renderTileGrid ft ts (((x, y), tile) : is)
-  | Just pic <- renderTile ft ts tile (x + 4, y + 4) = pic : renderTileGrid ft ts is
-  -- If tile can't be rendered (should never happen though)
-  | otherwise = trace ("Can't render tile: " ++ show tile) renderTileGrid ft ts is
+renderTileGrid :: RandomGen g => Float -> TileSet -> TileGrid -> Rand g [Picture]
+renderTileGrid ft _ [] = return []
+renderTileGrid ft ts ((_, 0) : is) = renderTileGrid ft ts is
+renderTileGrid ft ts (((x, y), tile) : is) = do
+  pic <- renderTile ft ts tile (x + 4, y + 4)
+  theRest <- renderTileGrid ft ts is
+  return $ pic : theRest
 
-renderTile :: Float -> TileSet -> Int -> Vec2 -> Maybe Picture
-renderTile _ ts 0 xy = Nothing
-renderTile ft ts i xy
-  | Just p <- lookup (animateTile ft i) ts = Just $ setPos xy p
-  | otherwise = Just $ renderDbgString red ("!tile: " ++ show i)
+renderTile :: RandomGen g => Float -> TileSet -> Int -> Vec2 -> Rand g Picture
+renderTile ft ts i xy = do
+  tileToRender <- animateTile ft i
+  return $
+    case lookup tileToRender ts of
+      Nothing -> trace ("tile not found: " ++ show i) blank
+      Just pic -> setPos xy pic
 
--- TODO: Rewrite this to use random animations, instead of time based.
-animateTile :: Float -> Int -> Int
+animateTile :: RandomGen g => Float -> Int -> Rand g Int
 animateTile ft i
-  -- Acid
-  | i == 673 && odd t = 674
-  | i == 674 && odd t = 673
+  -- Acid waves (top layer)
+  | i == 673 || i == 674 = Rng.uniform [673, 674]
+  -- Acid 'solid' blocks, randomly add bubbles (with a small chance)
+  | i == 675 = Rng.fromList ((675, 1) : map (,0.01) [717, 718, 719, 720, 761, 762, 763, 764])
   -- Laser
-  | i == 457 && odd lt = 459
-  | i == 458 && odd lt = 460
-  | i == 501 && odd lt = 503
-  | i == 502 && odd lt = 504
-  | i == 545 && odd lt = 547
-  | i == 546 && odd lt = 548
-  | i == 589 && odd lt = 591
-  | i == 590 && odd lt = 592
+  | i == 457 && odd lt = return 459
+  | i == 458 && odd lt = return 460
+  | i == 501 && odd lt = return 503
+  | i == 502 && odd lt = return 504
+  | i == 545 && odd lt = return 547
+  | i == 546 && odd lt = return 548
+  | i == 589 && odd lt = return 591
+  | i == 590 && odd lt = return 592
   -- Non animated tile
-  | otherwise = i
+  | otherwise = return i
   where
-    t = round ft
-
     -- Laser t, magic numbers.
     lt = timeToFrame ft 3 2
 

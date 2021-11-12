@@ -54,6 +54,7 @@ library
     , bytestring
     , containers
     , directory
+    , extra
     , filepath
     , gloss
     , gloss-juicy
@@ -87,6 +88,7 @@ executable UU-INFOFP-Game-exe
     , bytestring
     , containers
     , directory
+    , extra
     , filepath
     , gloss
     , gloss-juicy
@@ -122,6 +124,7 @@ test-suite UU-INFOFP-Game-test
     , bytestring
     , containers
     , directory
+    , extra
     , filepath
     , gloss
     , gloss-juicy
