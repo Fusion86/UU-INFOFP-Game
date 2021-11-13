@@ -1,6 +1,7 @@
 module Rendering where
 
 import Assets
+import Collision
 import Colors
 import Common
 import Control.Monad.Extra (concatMapM)
@@ -291,17 +292,30 @@ renderEntities ft a = pictures . map renderEntity
     fx = fxSheet a
 
     renderEntity :: LevelEntity -> Picture
-    renderEntity x = setPos (center x) $ getEntityPicture (entityType x)
+    renderEntity x = setPos (center x) $ getEntityPicture x
 
-    getEntityPicture :: EntityType -> Picture
-    getEntityPicture Bullet {bulletType = PeaShooter} = playerBullets fx !! 2
-    getEntityPicture Bullet {bulletType = RocketLauncher} = fireballPicture 0
+    getEntityPicture :: LevelEntity -> Picture
+    getEntityPicture LevelEntity { entityType = Bullet {bulletType = PeaShooter}} = playerBullets fx !! 2
+    getEntityPicture LevelEntity { entityType = Bullet {bulletType = RocketLauncher}, entityVelocity = vel} = fireballPicture $ fireballDirection vel
       where
+        fireballDirection :: Vec2 -> Int
+        fireballDirection (x, y) | nullX < 0 && nullY < 0.25 && nullY > -0.25 = 0
+                                 | nullX < 0 && nullY < -0.25 && nullY > -0.75 = 1
+                                 | nullY < -0.75 = 2
+                                 | nullX > 0 && nullY > -0.75 && nullY < -0.25 = 3
+                                 | nullX > 0 && nullY > -0.25 && nullY < 0.25 = 4
+                                 | nullX > 0 && nullY > 0.25 && nullY < 0.75 = 5
+                                 | nullY > 0.75 = 6
+                                 | otherwise = 7
+          where nullX = x / len
+                nullY = y / len * (-1)
+                len = euclideanDistance (0, 0) (x, y)
+
         fireballPicture :: Int -> Picture
         fireballPicture dir = fireball fx !! (frame + (dir * 2))
         frame = timeToFrame ft 8 2
-    getEntityPicture Bullet {} = head (playerBullets fx)
-    getEntityPicture (EffectEntity t totalLifetime lifetime) = frame
+    getEntityPicture LevelEntity {entityType = Bullet {}} = head (playerBullets fx)
+    getEntityPicture LevelEntity {entityType = (EffectEntity t totalLifetime lifetime)} = frame
       where
         frame
           | t == DamageExplosion = explosions (fxSheet a) !! getFrame 8
