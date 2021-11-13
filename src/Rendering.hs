@@ -10,6 +10,7 @@ import qualified Control.Monad.Random as Rng (fromList, uniform)
 import Coordinates
 import Data.Functor ((<&>))
 import Data.Map (lookup)
+import Data.Maybe (isJust)
 import Data.Text (pack)
 import Data.Word (Word8)
 import Graphics.Gloss
@@ -164,14 +165,22 @@ renderWorld a f t levels w@(World (Benchmark benchWorld rt) i) = do
       [ benchWorld,
         renderList (8, 8) 12 txts
       ]
-renderWorld _ f _ _ w@(World (MenuScene (EndOfLevel gp) _ selectedItem) _) = do
-  endTxt <- renderStringCenter f white "You Died"
-  menuTxts <- renderMenuItems f selectedItem ["Quit"]
+renderWorld _ f _ _ w@(World (MenuScene (EndOfLevel gp nextLevel) _ selectedItem) _) = do
+  endTxt <- renderStringCenter f white endTextStr
+  menuTxts <- renderMenuItems f selectedItem menuItems
   return $
     pictures
       [ setPos (288, 96) endTxt,
         renderList (288, 188) 12 menuTxts
       ]
+  where
+    endTextStr
+      | isJust nextLevel = "Level Completed"
+      | otherwise = "You Died"
+
+    menuItems
+      | isJust nextLevel = ["Next Level", "Quit"]
+      | otherwise = ["Quit"]
 
 -- renderWorld _ f _ _ _ = do
 --   str <- renderStringCenter f red "Scene not implemented"
@@ -343,6 +352,7 @@ renderEntities pt a = pictures . map renderEntity
     getEntityPicture LevelEntity {entityType = Bullet {bulletType = PeaShooter}} = playerBullets fx !! 2
     getEntityPicture LevelEntity {entityType = Bullet {bulletType = RocketLauncher}, entityVelocity = vel} = fireballPicture $ fireballDirection vel
       where
+        -- We could've also just rotated the sprite, oh well.
         fireballDirection :: Vec2 -> Int
         fireballDirection (x, y)
           | nullX < 0 && nullY < 0.25 && nullY > -0.25 = 0
@@ -366,6 +376,7 @@ renderEntities pt a = pictures . map renderEntity
       where
         frame
           | t == DamageExplosion = explosions (fxSheet a) !! getFrame 8
+          | t == EnemyDeath = smallExplosions (fxSheet a) !! getFrame 8
           | t == PlayerDamage = playerDamageImpact (fxSheet a) !! getFrame 2
           | t == PlayerDeath = playerDeath (fxSheet a) !! getFrame 7
           | otherwise = playerBulletImpact (fxSheet a) !! getFrame 3

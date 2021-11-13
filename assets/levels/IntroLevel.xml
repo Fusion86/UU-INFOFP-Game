@@ -162,7 +162,7 @@
   <object id="15" name="PlayerSpawn" x="16" y="232"/>
   <object id="16" name="LevelEnd" x="552" y="216" width="16" height="40">
    <properties>
-    <property name="NextLevel" value="NotYetImplemented"/>
+    <property name="NextLevel" value="Test Level 3"/>
    </properties>
   </object>
  </objectgroup>

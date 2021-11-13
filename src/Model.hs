@@ -57,7 +57,7 @@ data GameplayScene = GameplayScene
   }
   deriving (Show)
 
-data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel GameplayScene
+data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel GameplayScene (Maybe Level)
   deriving (Show)
 
 data Input = Input
@@ -190,9 +190,10 @@ data EffectEntityType
   | DamageExplosion
   | PlayerDamage
   | PlayerDeath
+  | EnemyDeath
   deriving (Show, Eq)
 
-data LevelObjectProperty = SpawnChance deriving (Show, Eq, Ord)
+data LevelObjectProperty = SpawnChance | NextLevel deriving (Show, Eq, Ord)
 
 type LevelObjectProperties = Map LevelObjectProperty String
 
@@ -313,8 +314,8 @@ createMenu m p = MenuScene m p 0
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
-initEndOfLevel :: GameplayScene -> Scene
-initEndOfLevel gp = createMenu (EndOfLevel gp) Nothing
+initEndOfLevel :: GameplayScene -> Maybe Level -> Scene
+initEndOfLevel gp nextLevel = createMenu (EndOfLevel gp nextLevel) Nothing
 
 createLevelInstance :: Level -> LevelInstance
 createLevelInstance l = LevelInstance l [] enemies 0

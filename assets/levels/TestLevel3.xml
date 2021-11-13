@@ -240,7 +240,7 @@
   <object id="1" name="PlayerSpawn" x="16" y="232"/>
   <object id="2" name="LevelEnd" x="456" y="200" width="16" height="40">
    <properties>
-    <property name="NextLevel" value="NotYetImplemented"/>
+    <property name="NextLevel" value="Performance Cheater"/>
    </properties>
   </object>
   <object id="3" name="Damage" x="32" y="264" width="48" height="24"/>

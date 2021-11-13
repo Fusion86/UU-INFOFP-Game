@@ -28,6 +28,7 @@ library
       Colors
       Common
       Coordinates
+      Enemy
       Input
       Levels
       Menu
