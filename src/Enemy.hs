@@ -30,7 +30,7 @@ updateEnemy d lvlInst enemy = enemy {enemyPosition = newPosition, enemyVelocity 
   where
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level lvlInst
-    instaDeathObjects = filter (\o -> objectName o == "Death") lvlObjs
+    instaDeathObjects = filter (\o -> objectType o == DeathObject) lvlObjs
 
     (x, y) = enemyPosition enemy
     (vx, vy) = enemyVelocity enemy

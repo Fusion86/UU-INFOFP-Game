@@ -193,13 +193,23 @@ data EffectEntityType
   | EnemyDeath
   deriving (Show, Eq)
 
+data LevelObjectType
+  = CollisionObject
+  | EnemyCollisionObject
+  | DeathObject
+  | DamageObject
+  | PlayerSpawnObject
+  | EnemySpawnerObject
+  | LevelEndObject
+  deriving (Show, Eq, Ord)
+
 data LevelObjectProperty = SpawnChance | NextLevel deriving (Show, Eq, Ord)
 
 type LevelObjectProperties = Map LevelObjectProperty String
 
 -- Might not be the best name for it, but in our map editor the same name is used.
 data LevelObject = LevelObject
-  { objectName :: String,
+  { objectType :: LevelObjectType,
     objectPosition :: Vec2,
     objectSize :: Vec2,
     objectProperties :: LevelObjectProperties
@@ -279,7 +289,7 @@ instance Object2D Player where
   size = const (12, 16)
 
 instance Object2D LevelObject where
-  name = objectName
+  name = show . objectType
   position = objectPosition
   size = objectSize
 
@@ -322,7 +332,7 @@ createLevelInstance l = LevelInstance l [] enemies 0
   where
     -- Spawn a enemy for each EnemySpawner
     -- TODO: This ignores enemy type
-    enemies = map newEnemy $ filter ((==) "EnemySpawner" . objectName) (levelObjects l)
+    enemies = map newEnemy $ filter ((==) EnemySpawnerObject . objectType) (levelObjects l)
 
     newEnemy :: LevelObject -> EnemyInstance
     newEnemy x = EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
@@ -337,7 +347,7 @@ createGameplay l p = Gameplay $ GameplayScene (createLevelInstance l) newPlayer 
           p {playerPosition = (100, 100)}
 
     playerSpawnPos = do
-      spawnObj <- find ((==) "PlayerSpawn" . objectName) (levelObjects l)
+      spawnObj <- find ((==) PlayerSpawnObject . objectType) (levelObjects l)
       return $ position spawnObj
 
 createBenchmark :: Level -> Scene

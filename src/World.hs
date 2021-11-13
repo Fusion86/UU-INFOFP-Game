@@ -125,7 +125,7 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
       | otherwise = False
 
     nextLevelObj :: Maybe LevelObject
-    nextLevelObj = find ((== "LevelEnd") . objectName) lvlObjs
+    nextLevelObj = find ((== LevelEndObject) . objectType) lvlObjs
 
     nextLevel :: Maybe Level
     nextLevel = do
@@ -233,7 +233,7 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
         updatedEnemies :: [EnemyInstance]
         updatedEnemies = map (updateEnemy d lvlInst) (levelEnemies lvlInst) ++ spawnedEnemies
           where
-            spawners = filter ((==) "EnemySpawner" . objectName) lvlObjs
+            spawners = filter ((==) EnemySpawnerObject . objectType) lvlObjs
 
             spawnedEnemies :: [EnemyInstance]
             spawnedEnemies

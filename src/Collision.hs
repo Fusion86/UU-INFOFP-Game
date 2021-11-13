@@ -5,12 +5,12 @@ import Data.Maybe
 import Model
 
 collisionObjects :: [LevelObject] -> [LevelObject]
-collisionObjects = filter ((==) "Collision" . objectName)
+collisionObjects = filter ((==) CollisionObject . objectType)
 
 enemyCollisionObjects :: [LevelObject] -> [LevelObject]
-enemyCollisionObjects = filter (f . objectName)
+enemyCollisionObjects = filter (f . objectType)
   where
-    f x = x == "Collision" || x == "EnemyCollision"
+    f x = x == CollisionObject || x == EnemyCollisionObject
 
 euclideanDistance :: Vec2 -> Vec2 -> Float
 euclideanDistance (x1, y1) (x2, y2) = sqrt ((x1 - x2) ** 2 + (y1 - y2) ** 2)

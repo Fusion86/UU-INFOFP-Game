@@ -66,11 +66,22 @@ loadLevelFromXml xml
       where
         parseLevelObject :: Element -> Maybe LevelObject
         parseLevelObject x = do
-          objectName <- findAttr (simpleName "name") x
+          objectTypeStr <- findAttr (simpleName "name") x
+          objectType <- parseObjectType objectTypeStr
           posX <- findAttr (simpleName "x") x
           posY <- findAttr (simpleName "y") x
-          return $ LevelObject objectName (readFloat posX, readFloat posY) (width, height) levelObjectProperties
+          return $ LevelObject objectType (readFloat posX, readFloat posY) (width, height) levelObjectProperties
           where
+            parseObjectType :: String -> Maybe LevelObjectType
+            parseObjectType "Collision" = Just CollisionObject
+            parseObjectType "EnemyCollision" = Just EnemyCollisionObject
+            parseObjectType "Death" = Just DeathObject
+            parseObjectType "Damage" = Just DamageObject
+            parseObjectType "PlayerSpawn" = Just PlayerSpawnObject
+            parseObjectType "EnemySpawner" = Just EnemySpawnerObject
+            parseObjectType "LevelEnd" = Just LevelEndObject
+            parseObjectType str = trace ("Unknown object type '" ++ str ++ "'") Nothing
+
             readFloat y = read y :: Float
 
             -- Width and height are optional properties, when they are not found they will be zero.

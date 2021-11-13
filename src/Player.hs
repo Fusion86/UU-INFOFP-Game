@@ -36,13 +36,13 @@ updatePlayer d w s
       | touchesInstaDeath = 0
       | otherwise = playerHealth pl - (enemiesDamage + environmentalDamage) * d
       where
-        touchesInstaDeath = any (\o -> objectName o == "Death" && intersects pl o) lvlObjs
+        touchesInstaDeath = any (\o -> objectType o == DeathObject && intersects pl o) lvlObjs
 
         enemiesDamage = sum $ map (enemyDamage . enemyType) enemiesIntersecting
         enemiesIntersecting = filter (intersects pl) enemies
 
         environmentalDamage = sum $ map environmentDamage environmentalDamageIntersecting
-        environmentalDamageIntersecting = filter (\o -> objectName o == "Damage" && intersects pl o) lvlObjs
+        environmentalDamageIntersecting = filter (\o -> objectType o == DamageObject && intersects pl o) lvlObjs
 
     selectedWeapon
       | isKeyDown i (Char '1') = AssaultRifle
