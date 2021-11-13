@@ -75,6 +75,7 @@ loadFxSheet f = do
           playerBulletImpact
           playerDamageImpact
           playerDeath
+          smallExplosions
           explosions
           fireball
       where
@@ -86,7 +87,8 @@ loadFxSheet f = do
         playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
         playerDamageImpact = map (\x -> f x 35 12 12) [15, 29 .. 29]
         playerDeath = map (\x -> f x 237 48 48) [1, 51 .. 301]
-        explosions = map (\x -> f x 67 22 22) [1, 25 .. 169]
+        smallExplosions = map (\x -> f x 49 16 16) [1, 19 .. 127]
+        explosions = map (\x -> f x 91 30 30) [1, 33 .. 225]
         fireball = map (\x -> f x 389 22 22) [1, 25 .. 361]
 
 loadEnemyCharacterSheet :: FilePath -> IO EnemyCharacterSheet

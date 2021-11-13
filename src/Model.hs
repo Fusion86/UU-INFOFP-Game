@@ -120,6 +120,7 @@ data Level = Level
   { levelName :: String,
     levelBackground :: Maybe String,
     levelForeground :: Maybe String,
+    levelParallax :: Maybe String,
     layers :: [TileLayer],
     levelObjects :: [LevelObject]
   }
@@ -224,6 +225,7 @@ data FxSheet = FxSheet
     playerBulletImpact :: [Picture],
     playerDamageImpact :: [Picture],
     playerDeath :: [Picture],
+    smallExplosions :: [Picture],
     explosions :: [Picture],
     fireball :: [Picture]
   }

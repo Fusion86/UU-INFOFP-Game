@@ -14,13 +14,16 @@ import Data.Text (pack)
 import Data.Word (Word8)
 import Graphics.Gloss
   ( Color,
-    Picture,
+    Picture (Bitmap),
+    bitmapSize,
+    black,
     blank,
     circleSolid,
     color,
     green,
     line,
     pictures,
+    polygon,
     rectangleWire,
     rgbaOfColor,
     scale,
@@ -57,10 +60,34 @@ renderString' o f c str = do
        in V4 (floor $ r * 255) (floor $ g * 255) (floor $ b * 255) (floor $ a * 255)
 
 renderWorldScaled :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
-renderWorldScaled a f t l w = do
-  world <- renderWorld a f t l w
-  let s = viewScale (input w)
-  return $ scale s s world
+renderWorldScaled a f t l world@World {input = i} = do
+  world <- renderWorld a f t l world
+  let s = viewScale i
+  return
+    ( if debugMode i
+        then pictures [scale s s world]
+        else pictures [scale s s world, frameLeft, frameRight, frameTop, frameBottom]
+    )
+  where
+    (w, h) = (viewWidth i, viewHeight i)
+    (gw, gh) = (gameWidth * viewScale i, gameHeight * viewScale i)
+    topLeft = (- (w / 2), - (h / 2))
+    topRight = (w / 2, - (h / 2))
+    bottomLeft = (- (w / 2), h / 2)
+    bottomRight = (w / 2, h / 2)
+    left = - (gw / 2)
+    right = gw / 2
+    top = - (gh / 2)
+    bottom = gh / 2
+    leftV = - (w / 2)
+    rightV = w / 2
+    topV = - (h / 2)
+    bottomV = h / 2
+
+    frameLeft = color black $ polygon [topLeft, (left, topV), (left, bottomV), bottomLeft]
+    frameRight = color black $ polygon [(right, topV), topRight, bottomRight, (right, bottomV)]
+    frameTop = color black $ polygon [topLeft, topRight, (rightV, top), (leftV, top)]
+    frameBottom = color black $ polygon [(leftV, bottom), (rightV, bottom), bottomRight, bottomLeft]
 
 renderWorld :: Assets -> Font -> TileSet -> [Level] -> World -> IO Picture
 renderWorld a f _ _ (World IntroScene {} _) = return $ getImageAsset a "Intro"
@@ -78,7 +105,7 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
   selectLevelTxt <- renderStringCenter f white "Select a level"
   levelTxts <- renderMenuItems f selectedItem (map levelName l)
-  let (bg, fg) = renderLevel 0 a t selectedLevel
+  let (bg, fg) = renderLevel 0 a t selectedLevel (gameWidth / 2, gameHeight / 2)
   return $
     pictures
       [ bg,
@@ -88,8 +115,8 @@ renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
       ]
   where
     selectedLevel = l !! selectedItem
-renderWorld a f t _ w@(World (Gameplay gp@GameplayScene {}) i) = do
-  let (bg, fg) = renderLevel pt a t (level lvlInst)
+renderWorld a f t _ w@(World (Gameplay gp@GameplayScene {player = pl}) i) = do
+  let (bg, fg) = renderLevel pt a t (level lvlInst) (playerPosition pl)
   hud <- renderHud pt a f pl
   return $
     pictures
@@ -191,8 +218,8 @@ renderList start spacing = pictures . helper start
     helper _ [] = []
     helper (x, y) (p : ps) = setPos (x, y) p : helper (x, y + spacing) ps
 
-renderLevel :: Float -> Assets -> TileSet -> Level -> (Picture, Picture)
-renderLevel ft a tileSet (Level name background foreground layers objects) =
+renderLevel :: Float -> Assets -> TileSet -> Level -> Vec2 -> (Picture, Picture)
+renderLevel pt a tileSet (Level name background foreground parallax layers objects) pos@(x, y) =
   evalRand
     ( do
         bg <- renderedBackground
@@ -202,18 +229,36 @@ renderLevel ft a tileSet (Level name background foreground layers objects) =
     -- We can't update our state inside the render function, which means we have to create a new generator each time.
     -- This generator seed changes every second, this is the wanted behavior!
     -- This also means that our random animations have a FPS of 1, which is what we want.
-    (mkStdGen $ floor ft)
+    (mkStdGen $ floor pt)
   where
     renderLayer :: RandomGen g => TileLayer -> Rand g [Picture]
-    renderLayer = renderTileGrid ft tileSet . tileGrid
+    renderLayer = renderTileGrid pt tileSet . tileGrid
 
     -- TODO: Parallax scroll background image based on player position
     bgLayers = filter ((==) BackgroundTileLayer . tileLayerType) layers
-    renderedBackground
-      | Just bgImage <- background = rest <&> pictures . (getImageAsset a bgImage :)
-      | otherwise = rest <&> pictures
+
+    bgImageList
+      | Just bgImage <- background = [getImageAsset a bgImage]
+      | otherwise = []
+
+    parallaxImageList
+      | Just parallaxImage <- parallax = [applyParallax $ getImageAsset a parallaxImage]
+      | otherwise = []
+
+    applyParallax :: Picture -> Picture
+    applyParallax p = translate effX effY p
       where
-        rest = concatMapM renderLayer bgLayers
+        (nullX, nullY) = ((x - gameWidth / 2) / gameWidth, (y - gameHeight / 2) / gameHeight)
+        (imgX, imgY) = imgSize p
+        (maxX, maxY) = (imgX - gameWidth, imgY - gameHeight)
+        effX = nullX * maxX * (-1)
+        effY = nullY * maxY
+
+        imgSize :: Picture -> (Float, Float)
+        imgSize (Bitmap img) = let (w, h) = bitmapSize img in (fromIntegral w, fromIntegral h)
+        imgSize _ = error "Can only get the imgSize of an Bitmap!"
+
+    renderedBackground = concatMapM renderLayer bgLayers <&> pictures . (++ bgImageList) . (++ parallaxImageList)
 
     fgLayers = filter ((==) ForegroundTileLayer . tileLayerType) layers
     renderedForeground
@@ -223,23 +268,23 @@ renderLevel ft a tileSet (Level name background foreground layers objects) =
         rest = concatMapM renderLayer fgLayers
 
 renderTileGrid :: RandomGen g => Float -> TileSet -> TileGrid -> Rand g [Picture]
-renderTileGrid ft _ [] = return []
-renderTileGrid ft ts ((_, 0) : is) = renderTileGrid ft ts is
-renderTileGrid ft ts (((x, y), tile) : is) = do
-  pic <- renderTile ft ts tile (x + 4, y + 4)
-  theRest <- renderTileGrid ft ts is
+renderTileGrid pt _ [] = return []
+renderTileGrid pt ts ((_, 0) : is) = renderTileGrid pt ts is
+renderTileGrid pt ts (((x, y), tile) : is) = do
+  pic <- renderTile pt ts tile (x + 4, y + 4)
+  theRest <- renderTileGrid pt ts is
   return $ pic : theRest
 
 renderTile :: RandomGen g => Float -> TileSet -> Int -> Vec2 -> Rand g Picture
-renderTile ft ts i xy = do
-  tileToRender <- animateTile ft i
+renderTile pt ts i xy = do
+  tileToRender <- animateTile pt i
   return $
     case lookup tileToRender ts of
       Nothing -> trace ("tile not found: " ++ show i) blank
       Just pic -> setPos xy pic
 
 animateTile :: RandomGen g => Float -> Int -> Rand g Int
-animateTile ft i
+animateTile pt i
   -- Acid waves (top layer)
   | i == 673 || i == 674 = Rng.uniform [673, 674]
   -- Acid 'solid' blocks, randomly add bubbles (with a small chance)
@@ -257,13 +302,13 @@ animateTile ft i
   | otherwise = return i
   where
     -- Laser t, magic numbers.
-    lt = timeToFrame ft 3 2
+    lt = timeToFrame pt 3 2
 
 renderCursor :: Assets -> World -> Picture
 renderCursor a (World _ i) = setPos (pointer i) $ getImageAsset a "Cursor"
 
 renderPlayer :: Float -> Assets -> World -> Player -> Picture
-renderPlayer ft a w p
+renderPlayer pt a w p
   -- Small offset because the player bounding box is not the same size as the texture.
   | playerHealth p > 0 = setPos (x, y - 4) pic
   | otherwise = blank
@@ -284,10 +329,10 @@ renderPlayer ft a w p
       where
         -- Returns 0-7 each second (inclusive), giving a framerate of 8 FPS.
         frame :: Int
-        frame = floor $ (ft - fromIntegral (floor ft)) * 8
+        frame = floor $ (pt - fromIntegral (floor pt)) * 8
 
 renderEntities :: Float -> Assets -> [LevelEntity] -> Picture
-renderEntities ft a = pictures . map renderEntity
+renderEntities pt a = pictures . map renderEntity
   where
     fx = fxSheet a
 
@@ -295,25 +340,27 @@ renderEntities ft a = pictures . map renderEntity
     renderEntity x = setPos (center x) $ getEntityPicture x
 
     getEntityPicture :: LevelEntity -> Picture
-    getEntityPicture LevelEntity { entityType = Bullet {bulletType = PeaShooter}} = playerBullets fx !! 2
-    getEntityPicture LevelEntity { entityType = Bullet {bulletType = RocketLauncher}, entityVelocity = vel} = fireballPicture $ fireballDirection vel
+    getEntityPicture LevelEntity {entityType = Bullet {bulletType = PeaShooter}} = playerBullets fx !! 2
+    getEntityPicture LevelEntity {entityType = Bullet {bulletType = RocketLauncher}, entityVelocity = vel} = fireballPicture $ fireballDirection vel
       where
         fireballDirection :: Vec2 -> Int
-        fireballDirection (x, y) | nullX < 0 && nullY < 0.25 && nullY > -0.25 = 0
-                                 | nullX < 0 && nullY < -0.25 && nullY > -0.75 = 1
-                                 | nullY < -0.75 = 2
-                                 | nullX > 0 && nullY > -0.75 && nullY < -0.25 = 3
-                                 | nullX > 0 && nullY > -0.25 && nullY < 0.25 = 4
-                                 | nullX > 0 && nullY > 0.25 && nullY < 0.75 = 5
-                                 | nullY > 0.75 = 6
-                                 | otherwise = 7
-          where nullX = x / len
-                nullY = y / len * (-1)
-                len = euclideanDistance (0, 0) (x, y)
+        fireballDirection (x, y)
+          | nullX < 0 && nullY < 0.25 && nullY > -0.25 = 0
+          | nullX < 0 && nullY < -0.25 && nullY > -0.75 = 1
+          | nullY < -0.75 = 2
+          | nullX > 0 && nullY > -0.75 && nullY < -0.25 = 3
+          | nullX > 0 && nullY > -0.25 && nullY < 0.25 = 4
+          | nullX > 0 && nullY > 0.25 && nullY < 0.75 = 5
+          | nullY > 0.75 = 6
+          | otherwise = 7
+          where
+            nullX = x / len
+            nullY = y / len * (-1)
+            len = euclideanDistance (0, 0) (x, y)
 
         fireballPicture :: Int -> Picture
         fireballPicture dir = fireball fx !! (frame + (dir * 2))
-        frame = timeToFrame ft 8 2
+        frame = timeToFrame pt 8 2
     getEntityPicture LevelEntity {entityType = Bullet {}} = head (playerBullets fx)
     getEntityPicture LevelEntity {entityType = (EffectEntity t totalLifetime lifetime)} = frame
       where
@@ -329,7 +376,7 @@ renderEntities ft a = pictures . map renderEntity
     getEntityPicture _ = renderDbgString red "entity not implemented"
 
 renderEnemies :: Float -> Assets -> [EnemyInstance] -> Picture
-renderEnemies ft a = pictures . map renderEnemy
+renderEnemies pt a = pictures . map renderEnemy
   where
     sheet = enemyCharacterSheet a
 
@@ -345,7 +392,7 @@ renderEnemies ft a = pictures . map renderEnemy
           | otherwise = crabIdle sheet
           where
             frame :: Int
-            frame = timeToFrame ft 6 3 -- Length of crabWalkRight and crabWalkLeft
+            frame = timeToFrame pt 6 3 -- Length of crabWalkRight and crabWalkLeft
         getEnemyPicture _ = renderDbgString red "entity not implemented"
 
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture

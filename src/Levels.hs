@@ -34,7 +34,7 @@ loadLevelFromXml xml
     -- We want eager evaluation to show all warnings for all levels (and not just when loading one level).
     let !eagerLayers = layers
         !eagerObjects = levelObjects
-     in Just $ Level name levelBackground levelForeground eagerLayers eagerObjects
+     in Just $ Level name levelBackground levelForeground levelParallax eagerLayers eagerObjects
   | otherwise = Nothing
   where
     contents = parseXML xml
@@ -105,6 +105,9 @@ loadLevelFromXml xml
 
     levelForeground :: Maybe String
     levelForeground = getPropValueByName mapProps "Foreground"
+
+    levelParallax :: Maybe String
+    levelParallax = getPropValueByName mapProps "Parallax"
 
     layers :: [TileLayer]
     layers = case mapRoot of
