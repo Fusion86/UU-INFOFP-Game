@@ -1,6 +1,6 @@
 # UU-INFOFP-Game
 
-[Click here to browse all build artifacts.](https://s3.cerbus.nl/minio/uu-infofp-game/)
+[Download the latest stable version from the releases page](https://github.com/Fusion86/UU-INFOFP-Game/releases/latest), or [browse all build artifacts.](https://s3.cerbus.nl/minio/uu-infofp-game/)
 
 ## Setup development environment (Debian & friends)
 
