@@ -55,6 +55,10 @@ LIBGL_SHOW_FPS=1 stack exec UU-INFOFP-Game-exe
 stack --profile run --rts-options -p
 ```
 
+## Screenshots
+
+![This is an image](docs/game.jpg)
+
 ## How to run a benchmark (Linux only)
 
 ```sh
