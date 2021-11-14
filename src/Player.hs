@@ -54,7 +54,7 @@ updatePlayer d w s
         bullets = filter isBullet lvlEntities
           where
             -- Shitty filter
-            isBullet (LevelEntity Bullet {} _ _ _) = True
+            isBullet (LevelEntity Bullet {bulletType = EnemyWeapon} _ _ _) = True
             isBullet _ = False
 
     selectedWeapon

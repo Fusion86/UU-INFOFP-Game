@@ -53,12 +53,13 @@ data GameplayScene = GameplayScene
     player :: Player,
     -- | Play time in seconds.
     playTime :: Float,
+    score :: Int,
     -- | Countdown after the player dies, when this reaches zero we transition to the end of level scene.
     transitionCountdown :: Float
   }
   deriving (Show)
 
-data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel GameplayScene (Maybe Level)
+data MenuType = MainMenu | LevelSelectMenu | PauseMenu | EndOfLevel GameplayScene (Maybe Level) Int
   deriving (Show)
 
 data Input = Input
@@ -133,6 +134,7 @@ data LevelInstance = LevelInstance
   { level :: Level,
     levelEntities :: [LevelEntity],
     levelEnemies :: [EnemyInstance],
+    levelScore :: Int,
     levelTimeSinceLastSpawnerTick :: Float
     -- pickupItems :: [PickupItemInstance]
   }
@@ -337,8 +339,8 @@ createMenu m p = MenuScene m p 0
 initMainMenu :: Scene
 initMainMenu = createMenu MainMenu Nothing
 
-initEndOfLevel :: GameplayScene -> Maybe Level -> Scene
-initEndOfLevel gp nextLevel = createMenu (EndOfLevel gp nextLevel) Nothing
+initEndOfLevel :: GameplayScene -> Maybe Level -> Int -> Scene
+initEndOfLevel gp nextLevel score = createMenu (EndOfLevel gp nextLevel score) Nothing
 
 printVec2 :: Vec2 -> String
 printVec2 (x, y) = printf "%0.2f" x ++ ", " ++ printf "%0.2f" y

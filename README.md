@@ -136,7 +136,7 @@ Properties are case sensitive and optional, unless noted otherwise.
 
 - Name: EnemySpawner
 - Properties:
-  - Type: Enemy type. Possible values: `Crab`. Not yet implemented.
+  - Type: Enemy type. Possible values: `Crab` | `Sun`.
   - Chance: Number "0" to "100" (as a string) how likely it is an enemy will spawn. An enemy will spawn at least once regardless of this value.
 - Behavior: Will spawn an enemy once at the level start, and based on chance every second.
 

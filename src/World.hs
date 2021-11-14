@@ -20,12 +20,12 @@ import Weapons
 import Prelude hiding (lookup)
 
 createLevelInstance :: Level -> LevelInstance
-createLevelInstance l = LevelInstance l [] enemies 0
+createLevelInstance l = LevelInstance l [] enemies 0 0
   where
     enemies = mapMaybe spawnEnemy $ filter ((==) EnemySpawnerObject . objectType) (levelObjects l)
 
-createGameplay :: Level -> Player -> Float -> Scene
-createGameplay l p pt = Gameplay $ GameplayScene (createLevelInstance l) newPlayer pt 2
+createGameplay :: Level -> Player -> Float -> Int -> Scene
+createGameplay l p pt score = Gameplay $ GameplayScene (createLevelInstance l) newPlayer pt score 2
   where
     newPlayer
       | Just spawnPos <- playerSpawnPos = p {playerPosition = spawnPos}
@@ -38,7 +38,7 @@ createGameplay l p pt = Gameplay $ GameplayScene (createLevelInstance l) newPlay
       return $ position spawnObj
 
 createBenchmark :: Level -> Scene
-createBenchmark l = Benchmark (World (createGameplay l dummyPlayer 0) initInput) 30
+createBenchmark l = Benchmark (World (createGameplay l dummyPlayer 0 0) initInput) 30
   where
     dummyPlayer = initPlayer
 
@@ -70,7 +70,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
        in case activatedItem of
             -- Start the intro level
             Just 0 -> case find ((==) "Intro" . levelName) l of
-              Just x -> createGameplay x initPlayer 0
+              Just x -> createGameplay x initPlayer 0 0
               Nothing -> trace "No intro level found!" s
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
@@ -84,7 +84,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
       let (activatedItem, s) = updateMenuScene (length l) d w
        in case activatedItem of
             Nothing -> s
-            Just x -> createGameplay (l !! x) initPlayer 0
+            Just x -> createGameplay (l !! x) initPlayer 0 0
     -- Gameplay paused menu
     PauseMenu ->
       let (activatedItem, s) = updateMenuScene 2 d w
@@ -96,21 +96,21 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
             -- Default
             _ -> s
     -- End of level menu, should show score etc.
-    EndOfLevel gp nextLevel ->
+    EndOfLevel gp nextLevel score ->
       let itemCount = if isJust nextLevel then 2 else 1
           (activatedItem, s) = updateMenuScene itemCount d w
        in case activatedItem of
             Just i ->
               if i == 0 && isJust nextLevel
-                then createGameplay (fromJust nextLevel) (player gp) (playTime gp)
+                then createGameplay (fromJust nextLevel) (player gp) (playTime gp) score
                 else initMainMenu
             _ -> s
 -- Gameplay
 -- NOTE: "lens/optics provide a language to do this pattern matching." -- dminuoso
 updateScene lvls d' w@(World s@(Gameplay gp) _)
   | MenuBack `elem` events i = createMenu PauseMenu (Just s)
-  | playerInLevelEndZone = initEndOfLevel gp nextLevel
-  | transCountdown < 0 = initEndOfLevel gp Nothing
+  | playerInLevelEndZone = initEndOfLevel gp nextLevel (score gp + levelScore newLevelInstance)
+  | transCountdown < 0 = initEndOfLevel gp Nothing (score gp + levelScore newLevelInstance)
   | playerHealth newPlayer <= 0 = Gameplay gp {levelInstance = newLevelInstance, transitionCountdown = transCountdown - d, player = pl {playerHealth = 0}, playTime = pt + d}
   | otherwise = Gameplay gp {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
   where
@@ -159,7 +159,8 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
       lvlInst
         { levelEntities = filter entityInsideLevel $ mapMaybe updateEntity newLevelEntities,
           levelEnemies = filter ((> 0) . enemyHealth) updatedEnemies,
-          levelTimeSinceLastSpawnerTick = newTimeSinceLastSpawnerTick
+          levelTimeSinceLastSpawnerTick = newTimeSinceLastSpawnerTick,
+          levelScore = levelScore lvlInst + length enemiesThatWillDie
         }
       where
         newLevelEntities :: [LevelEntity]
@@ -263,8 +264,10 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
               | shouldSpawnEnemies = catMaybes $ evalRand (mapM spawnEnemyMaybe spawners) randGen
               | otherwise = []
 
+        enemiesThatWillDie = filter ((<= 0) . enemyHealth) updatedEnemies
+
         enemyDeathExplosions :: [LevelEntity]
-        enemyDeathExplosions = map f $ filter ((<= 0) . enemyHealth) updatedEnemies
+        enemyDeathExplosions = map f enemiesThatWillDie
           where
             f e = LevelEntity (EffectEntity EnemyDeath 0.3 0) (center e) (0, 0) (0, 0)
 updateScene levels d (World b@(Benchmark w rt) _)

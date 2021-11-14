@@ -100,7 +100,7 @@ renderWorld a f _ _ w@(World (MenuScene MainMenu _ selectedItem) _) = do
     pictures
       [ getImageAsset a "MainMenuBg",
         setPos (288, 120) $ scale 4 4 gameTxt,
-        setPos (296, 96) subTxt,
+        setPos (296, 106) subTxt,
         renderList (288, 188) 12 menuTxts
       ]
 renderWorld a f t l w@(World (MenuScene LevelSelectMenu _ selectedItem) _) = do
@@ -165,14 +165,17 @@ renderWorld a f t levels w@(World (Benchmark benchWorld rt) i) = do
       [ benchWorld,
         renderList (8, 8) 12 txts
       ]
-renderWorld _ f _ _ w@(World (MenuScene (EndOfLevel gp nextLevel) _ selectedItem) _) = do
+renderWorld a f _ _ w@(World (MenuScene (EndOfLevel gp nextLevel score) _ selectedItem) _) = do
   endTxt <- renderStringCenter f white endTextStr
-  scoreTxt <- renderStringCenter f gray ("You survived for " ++ printf "%0.0f" (playTime gp) ++ " seconds")
+  surviveTxt <- renderStringCenter f gray ("You survived for " ++ printf "%0.0f" (playTime gp) ++ " seconds")
+  scoreTxt <- renderStringCenter f gray ("During this time you killed " ++ show score ++ " enemies")
   menuTxts <- renderMenuItems f selectedItem menuItems
   return $
     pictures
-      [ setPos (288, 96) endTxt,
-        setPos (288, 108) scoreTxt,
+      [ getImageAsset a "EndOfLevelBg",
+        setPos (288, 96) endTxt,
+        setPos (288, 108) surviveTxt,
+        setPos (288, 120) scoreTxt,
         renderList (288, 188) 12 menuTxts
       ]
   where
