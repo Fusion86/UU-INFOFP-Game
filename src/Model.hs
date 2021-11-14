@@ -7,6 +7,7 @@ import qualified Data.Set as S (Set, empty)
 import Graphics.Gloss (Picture)
 import Graphics.Gloss.Interface.IO.Interact (Key)
 import SDL.Font (Font)
+import Text.Printf (printf)
 
 type TileSet = Map Int Picture
 
@@ -86,6 +87,7 @@ data InputEvent
 data CharacterState
   = MovingState
   | IdleState
+  | ShootingState
   deriving (Show, Eq)
 
 data Player = Player
@@ -114,6 +116,7 @@ data WeaponType
   | PeaShooter
   | SniperRifle
   | RocketLauncher
+  | EnemyWeapon
   deriving (Show, Eq)
 
 data Level = Level
@@ -150,11 +153,12 @@ data EnemyInstance = EnemyInstance
     enemyHealth :: Float,
     enemyPosition :: Vec2,
     enemyVelocity :: Vec2,
-    enemyState :: CharacterState
+    enemyState :: CharacterState,
+    enemyShootCooldown :: Float
   }
   deriving (Show)
 
-data EnemyType = CrabEnemy | Heavy | Fast deriving (Show, Eq)
+data EnemyType = CrabEnemy | SunEnemy deriving (Show, Eq)
 
 -- data PickupItemInstance = PickupItemInstance
 --   { pickupItem :: PickupItem,
@@ -186,9 +190,10 @@ data EntityType
   deriving (Show, Eq)
 
 data EffectEntityType
-  = BulletImpact
+  = GreenBulletImpact
+  | BlueBulletImpact
+  | RedBulletImpact
   | DamageExplosion
-  | PlayerDamage
   | PlayerDeath
   | EnemyDeath
   deriving (Show, Eq)
@@ -203,7 +208,11 @@ data LevelObjectType
   | LevelEndObject
   deriving (Show, Eq, Ord)
 
-data LevelObjectProperty = SpawnChance | NextLevel deriving (Show, Eq, Ord)
+data LevelObjectProperty
+  = SpawnChance
+  | NextLevel
+  | TypeProperty
+  deriving (Show, Eq, Ord)
 
 type LevelObjectProperties = Map LevelObjectProperty String
 
@@ -227,15 +236,19 @@ data PlayerCharacterSheet = PlayerCharacterSheet
 data EnemyCharacterSheet = EnemyCharacterSheet
   { crabIdle :: Picture,
     crabWalkLeft :: [Picture],
-    crabWalkRight :: [Picture]
+    crabWalkRight :: [Picture],
+    sunIdle :: [Picture],
+    sunShooting :: Picture
   }
   deriving (Show)
 
 data FxSheet = FxSheet
   { playerBullets :: [Picture],
-    playerBulletImpact :: [Picture],
-    playerDamageImpact :: [Picture],
+    greenBulletImpact :: [Picture],
+    redBulletImpact :: [Picture],
+    blueBulletImpact :: [Picture],
     playerDeath :: [Picture],
+    enemyBullet :: Picture,
     smallExplosions :: [Picture],
     explosions :: [Picture],
     fireball :: [Picture]
@@ -294,13 +307,13 @@ instance Object2D LevelObject where
   size = objectSize
 
 instance Object2D LevelEntity where
-  name (LevelEntity (Bullet _ start prev _) _ _ _) = "Bullet " ++ show (truncVec2 start) ++ " " ++ show (truncVec2 prev)
+  name (LevelEntity (Bullet _ start prev _) _ _ _) = "Bullet " ++ printVec2 start ++ " " ++ printVec2 prev
   name e = "Entity " ++ show (entityType e)
   position = entityPosition
   size = entitySize
 
 instance Object2D EnemyInstance where
-  name a = "Enemy " ++ show (enemyType a) ++ " " ++ show (truncVec2 (enemyPosition a))
+  name a = "Enemy " ++ show (enemyType a) ++ " pos: " ++ printVec2 (enemyPosition a) ++ " hp: " ++ printf "%0.2f" (enemyHealth a)
   position = enemyPosition
   size = enemySize . enemyType
 
@@ -327,42 +340,23 @@ initMainMenu = createMenu MainMenu Nothing
 initEndOfLevel :: GameplayScene -> Maybe Level -> Scene
 initEndOfLevel gp nextLevel = createMenu (EndOfLevel gp nextLevel) Nothing
 
-createLevelInstance :: Level -> LevelInstance
-createLevelInstance l = LevelInstance l [] enemies 0
-  where
-    -- Spawn a enemy for each EnemySpawner
-    -- TODO: This ignores enemy type
-    enemies = map newEnemy $ filter ((==) EnemySpawnerObject . objectType) (levelObjects l)
-
-    newEnemy :: LevelObject -> EnemyInstance
-    newEnemy x = EnemyInstance CrabEnemy 100 (objectPosition x) (100, 0) IdleState
-
-createGameplay :: Level -> Player -> Scene
-createGameplay l p = Gameplay $ GameplayScene (createLevelInstance l) newPlayer 0 2
-  where
-    newPlayer
-      | Just spawnPos <- playerSpawnPos = p {playerPosition = spawnPos}
-      | otherwise =
-        trace "No PlayerSpawn defined, using default values of (100,100)" $
-          p {playerPosition = (100, 100)}
-
-    playerSpawnPos = do
-      spawnObj <- find ((==) PlayerSpawnObject . objectType) (levelObjects l)
-      return $ position spawnObj
-
-createBenchmark :: Level -> Scene
-createBenchmark l = Benchmark (World (createGameplay l dummyPlayer) initInput) 30
-  where
-    dummyPlayer = initPlayer
+printVec2 :: Vec2 -> String
+printVec2 (x, y) = printf "%0.2f" x ++ ", " ++ printf "%0.2f" y
 
 enemySpeed :: EnemyType -> Float
-enemySpeed = const 50
+enemySpeed CrabEnemy = 50
+enemySpeed SunEnemy = 25
 
 enemySize :: EnemyType -> Vec2
-enemySize = const (14, 14)
+enemySize CrabEnemy = (14, 14)
+enemySize SunEnemy = (16, 16)
 
 enemyDamage :: EnemyType -> Float
 enemyDamage = const 100
+
+enemyCanShoot :: EnemyType -> Bool
+enemyCanShoot SunEnemy = True
+enemyCanShoot _ = False
 
 gravity :: Float
 gravity = 10
@@ -372,9 +366,6 @@ gameWidth = 576 -- 8 * 72
 
 gameHeight :: Float
 gameHeight = 336 -- 8 * 42
-
-truncVec2 :: Vec2 -> Vec2
-truncVec2 (x, y) = (fromIntegral $ truncate x, fromIntegral $ truncate y)
 
 environmentDamage :: LevelObject -> Float
 environmentDamage = const 100

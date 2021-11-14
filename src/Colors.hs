@@ -13,3 +13,6 @@ darkRed = fromRgba 136 0 21 255
 
 white :: Color
 white = fromRgba 255 255 255 255
+
+gray :: Color
+gray = fromRgba 204 204 204 255

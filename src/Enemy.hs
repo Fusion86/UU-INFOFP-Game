@@ -3,15 +3,16 @@ module Enemy where
 import Collision
 import Control.Monad.Random (MonadRandom (getRandomR), Rand, RandomGen)
 import qualified Control.Monad.Random as Rng (uniform)
+import Data.Functor ((<&>))
 import Data.List (find)
+import Data.Map (lookup)
 import Data.Maybe
 import Model
 import Weapons
 import Prelude hiding (lookup)
-import Data.Map (lookup)
 
-spawnMaybe :: RandomGen g => LevelObject -> Rand g (Maybe EnemyInstance)
-spawnMaybe x = do
+spawnEnemyMaybe :: RandomGen g => LevelObject -> Rand g (Maybe EnemyInstance)
+spawnEnemyMaybe x = do
   -- This is our RandomGen monad
   rng <- getRandomR (0, 100)
   direction <- Rng.uniform [(100, 0), (0, 100)]
@@ -20,13 +21,47 @@ spawnMaybe x = do
       do
         -- Chance is an optional property. If it is missing then just abort (aka return Nothing).
         chance <- lookup SpawnChance (objectProperties x)
+        enemy <- spawnEnemy x
         if (read chance :: Int) > rng
-          then return $ EnemyInstance CrabEnemy 100 (objectPosition x) direction IdleState
+          then return $ enemy {enemyVelocity = direction}
           else Nothing
     )
 
-updateEnemy :: Float -> LevelInstance -> EnemyInstance -> EnemyInstance
-updateEnemy d lvlInst enemy = enemy {enemyPosition = newPosition, enemyVelocity = newVelocity, enemyHealth = newHp}
+spawnEnemy :: LevelObject -> Maybe EnemyInstance
+spawnEnemy x = do
+  enemyTypeStr <- lookup TypeProperty (objectProperties x)
+  enemyType <- parseEnemyType enemyTypeStr
+  return $ EnemyInstance enemyType 100 (objectPosition x) (0, 100) IdleState 2
+
+parseEnemyType :: String -> Maybe EnemyType
+parseEnemyType "Crab" = Just CrabEnemy
+parseEnemyType "Sun" = Just SunEnemy
+parseEnemyType _ = Nothing
+
+updateEnemy :: RandomGen g => Float -> LevelInstance -> EnemyInstance -> Rand g EnemyInstance
+updateEnemy d lvlInst enemy = do
+  shouldShoot <-
+    if enemyCanShoot (enemyType enemy) && enemyShootCooldown enemy == 0
+      then getRandomR (0 :: Int, 100) <&> (> 60)
+      else return False
+
+  let shootCooldown =
+        if shouldShoot
+          then weaponShootCooldown EnemyWeapon
+          else max 0 (enemyShootCooldown enemy - d)
+
+  let newEnemy =
+        enemy
+          { enemyPosition = newPosition,
+            enemyVelocity = newVelocity,
+            enemyHealth = newHp,
+            enemyShootCooldown = shootCooldown
+          }
+  return
+    ( if shouldShoot
+        then newEnemy {enemyState = ShootingState}
+        else newEnemy {enemyState = IdleState}
+    )
   where
     lvlEntities = levelEntities lvlInst
     lvlObjs = levelObjects $ level lvlInst
@@ -39,47 +74,21 @@ updateEnemy d lvlInst enemy = enemy {enemyPosition = newPosition, enemyVelocity 
 
     newHp
       | any (intersects enemy) instaDeathObjects = 0
-      -- TODO: This uses hardcoded damage values.
-      -- example: | Just bullet <- enemyHitByBullet = hp - (weaponDamage bullet)
-      -- ... ^ this won't work because the bullet type is trash (just like this language).
-      | Just bullet <- enemyHitByBullet = hp - dmg bullet
-      -- if hit by explosion from rocket launcher
-      | explosionDamage > 0 = hp - explosionDamage
-      | otherwise = hp
+      | Just bullet <- enemyHitByBullet = hp - weaponDamage' bullet
+      | otherwise = hp - (environmentalDamage + explosionDamage) * d
       where
-        dmg (LevelEntity Bullet {bulletType = wp} _ _ _) = weaponDamage wp
-        dmg _ = 0
+        enemyHitByBullet = find ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
+        bullets = filter isBullet lvlEntities
+          where
+            -- Shitty filter
+            isBullet (LevelEntity Bullet {} _ _ _) = True
+            isBullet _ = False
 
-    enemyHitByBullet = find ((isJust . (`lineIntersectsObject` enemy)) . getBulletHitboxRay d) bullets
-    bullets = filter isBullet lvlEntities
-      where
-        -- Shitty filter
-        isBullet (LevelEntity Bullet {} _ _ _) = True
-        isBullet _ = False
+        environmentalDamage = sum $ map environmentDamage environmentalDamageIntersecting
+        environmentalDamageIntersecting = filter (\o -> objectType o == DamageObject && intersects enemy o) lvlObjs
 
     explosionDamage :: Float
-    explosionDamage = sum $ map fst explosionsHit
-
-    -- Returns a list with the explosions that hit the enemy.
-    -- fst = damage, snd = position of the explosion.
-    -- `snd` could be used to implement knock-back.
-    explosionsHit = mapMaybe f explosions
-      where
-        blastDamage = 200
-        blastRadius = 50
-
-        f :: LevelEntity -> Maybe (Float, Vec2)
-        f e
-          | dmg > 0 = Just (dmg, position e)
-          | otherwise = Nothing
-          where
-            dmg = max 0 $ (1 - (dist / blastRadius)) * blastDamage
-            dist = euclideanDistance (position e) (position enemy)
-
-    explosions = filter isExplosion lvlEntities
-      where
-        isExplosion (LevelEntity (EffectEntity DamageExplosion _ 0) _ _ _) = True
-        isExplosion _ = False
+    explosionDamage = sum $ map fst (explosionsHit lvlEntities enemy)
 
     speed = enemySpeed (enemyType enemy)
     acceleration = speed / 4

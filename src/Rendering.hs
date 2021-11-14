@@ -167,10 +167,12 @@ renderWorld a f t levels w@(World (Benchmark benchWorld rt) i) = do
       ]
 renderWorld _ f _ _ w@(World (MenuScene (EndOfLevel gp nextLevel) _ selectedItem) _) = do
   endTxt <- renderStringCenter f white endTextStr
+  scoreTxt <- renderStringCenter f gray ("You survived for " ++ printf "%0.0f" (playTime gp) ++ " seconds")
   menuTxts <- renderMenuItems f selectedItem menuItems
   return $
     pictures
       [ setPos (288, 96) endTxt,
+        setPos (288, 108) scoreTxt,
         renderList (288, 188) 12 menuTxts
       ]
   where
@@ -349,6 +351,7 @@ renderEntities pt a = pictures . map renderEntity
     renderEntity x = setPos (center x) $ getEntityPicture x
 
     getEntityPicture :: LevelEntity -> Picture
+    getEntityPicture LevelEntity {entityType = Bullet {bulletType = EnemyWeapon}} = enemyBullet fx
     getEntityPicture LevelEntity {entityType = Bullet {bulletType = PeaShooter}} = playerBullets fx !! 2
     getEntityPicture LevelEntity {entityType = Bullet {bulletType = RocketLauncher}, entityVelocity = vel} = fireballPicture $ fireballDirection vel
       where
@@ -377,9 +380,10 @@ renderEntities pt a = pictures . map renderEntity
         frame
           | t == DamageExplosion = explosions (fxSheet a) !! getFrame 8
           | t == EnemyDeath = smallExplosions (fxSheet a) !! getFrame 8
-          | t == PlayerDamage = playerDamageImpact (fxSheet a) !! getFrame 2
+          | t == RedBulletImpact = redBulletImpact (fxSheet a) !! getFrame 2
+          | t == BlueBulletImpact = blueBulletImpact (fxSheet a) !! getFrame 3
           | t == PlayerDeath = playerDeath (fxSheet a) !! getFrame 7
-          | otherwise = playerBulletImpact (fxSheet a) !! getFrame 3
+          | otherwise = greenBulletImpact (fxSheet a) !! getFrame 3
 
         -- Get frame count based on how far in the fx's lifetime we are. Arg = total frames.
         getFrame :: Int -> Int
@@ -402,9 +406,12 @@ renderEnemies pt a = pictures . map renderEnemy
           | vx < 0 = crabWalkLeft sheet !! frame
           | otherwise = crabIdle sheet
           where
-            frame :: Int
             frame = timeToFrame pt 6 3 -- Length of crabWalkRight and crabWalkLeft
-        getEnemyPicture _ = renderDbgString red "entity not implemented"
+        getEnemyPicture SunEnemy
+          | vx > 0 = sunIdle sheet !! (4 - frame)
+          | otherwise = sunIdle sheet !! frame
+          where
+            frame = timeToFrame pt 10 5
 
 renderHud :: Float -> Assets -> Font -> Player -> IO Picture
 renderHud pt a f pl = do

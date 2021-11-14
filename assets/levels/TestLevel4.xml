@@ -161,26 +161,31 @@
   <object id="16" name="Collision" x="16" y="0" width="448" height="16"/>
   <object id="17" name="EnemySpawner" x="40" y="40">
    <properties>
+    <property name="SpawnChance" value="10"/>
     <property name="Type" value="Crab"/>
    </properties>
   </object>
   <object id="18" name="EnemySpawner" x="352" y="184">
    <properties>
+    <property name="SpawnChance" value="10"/>
     <property name="Type" value="Crab"/>
    </properties>
   </object>
   <object id="19" name="EnemySpawner" x="336" y="248">
    <properties>
+    <property name="SpawnChance" value="10"/>
     <property name="Type" value="Crab"/>
    </properties>
   </object>
   <object id="20" name="EnemySpawner" x="224" y="104">
    <properties>
-    <property name="Type" value="Crab"/>
+    <property name="SpawnChance" value="10"/>
+    <property name="Type" value="Sun"/>
    </properties>
   </object>
   <object id="21" name="EnemySpawner" x="408" y="40">
    <properties>
+    <property name="SpawnChance" value="10"/>
     <property name="Type" value="Crab"/>
    </properties>
   </object>

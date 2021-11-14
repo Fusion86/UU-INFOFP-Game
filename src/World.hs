@@ -1,11 +1,11 @@
-module World (updateWorld) where
+module World where
 
 import Collision
 import Common
 import Control.Monad.Random (Rand, RandomGen, evalRand, getRandomR, mkStdGen)
 import Data.List (find)
 import Data.Map (lookup)
-import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, mapMaybe)
+import Data.Maybe (catMaybes, fromJust, fromMaybe, isJust, mapMaybe, maybeToList)
 import Data.Set (empty, member)
 import Enemy
 import Graphics.Gloss.Interface.IO.Game
@@ -18,6 +18,29 @@ import System.Exit (exitSuccess)
 import System.IO.Unsafe (unsafePerformIO)
 import Weapons
 import Prelude hiding (lookup)
+
+createLevelInstance :: Level -> LevelInstance
+createLevelInstance l = LevelInstance l [] enemies 0
+  where
+    enemies = mapMaybe spawnEnemy $ filter ((==) EnemySpawnerObject . objectType) (levelObjects l)
+
+createGameplay :: Level -> Player -> Float -> Scene
+createGameplay l p pt = Gameplay $ GameplayScene (createLevelInstance l) newPlayer pt 2
+  where
+    newPlayer
+      | Just spawnPos <- playerSpawnPos = p {playerPosition = spawnPos}
+      | otherwise =
+        trace "No PlayerSpawn defined, using default values of (100,100)" $
+          p {playerPosition = (100, 100)}
+
+    playerSpawnPos = do
+      spawnObj <- find ((==) PlayerSpawnObject . objectType) (levelObjects l)
+      return $ position spawnObj
+
+createBenchmark :: Level -> Scene
+createBenchmark l = Benchmark (World (createGameplay l dummyPlayer 0) initInput) 30
+  where
+    dummyPlayer = initPlayer
 
 updateWorld :: [Level] -> Float -> World -> World
 updateWorld l d w@(World s i) =
@@ -47,7 +70,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
        in case activatedItem of
             -- Start the intro level
             Just 0 -> case find ((==) "Intro" . levelName) l of
-              Just x -> createGameplay x initPlayer
+              Just x -> createGameplay x initPlayer 0
               Nothing -> trace "No intro level found!" s
             -- Level Select
             Just 1 -> createMenu LevelSelectMenu (Just s)
@@ -61,7 +84,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
       let (activatedItem, s) = updateMenuScene (length l) d w
        in case activatedItem of
             Nothing -> s
-            Just x -> createGameplay (l !! x) initPlayer
+            Just x -> createGameplay (l !! x) initPlayer 0
     -- Gameplay paused menu
     PauseMenu ->
       let (activatedItem, s) = updateMenuScene 2 d w
@@ -79,7 +102,7 @@ updateScene l d w@(World s@(MenuScene menuType parentMenu _) _) =
        in case activatedItem of
             Just i ->
               if i == 0 && isJust nextLevel
-                then createGameplay (fromJust nextLevel) (player gp)
+                then createGameplay (fromJust nextLevel) (player gp) (playTime gp)
                 else initMainMenu
             _ -> s
 -- Gameplay
@@ -88,13 +111,12 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
   | MenuBack `elem` events i = createMenu PauseMenu (Just s)
   | playerInLevelEndZone = initEndOfLevel gp nextLevel
   | transCountdown < 0 = initEndOfLevel gp Nothing
-  | playerHealth newPlayer <= 0 = Gameplay gp {levelInstance = newLevelInstance, transitionCountdown = transCountdown - d, player = pl {playerHealth = 0}}
+  | playerHealth newPlayer <= 0 = Gameplay gp {levelInstance = newLevelInstance, transitionCountdown = transCountdown - d, player = pl {playerHealth = 0}, playTime = pt + d}
   | otherwise = Gameplay gp {levelInstance = newLevelInstance, player = newPlayer, playTime = pt + d}
   where
     i = input w
     pt = playTime gp
     pl = player gp
-    (mx, my) = pointer $ input w
     (x, y) = center pl
     (vx, vy) = playerVelocity pl
     state = playerState pl
@@ -144,6 +166,7 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
         newLevelEntities =
           concat
             [ newBulletList,
+              newEnemyBulletList,
               lvlEntities,
               playerDmgList,
               playerDeathList,
@@ -153,26 +176,17 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
             -- Kinda shitty, but it works.
             playerDmgList = [playerDamageEntity | playerHealth pl > 0 && playerHealth newPlayer < playerHealth pl]
             playerDeathList = [playerDeathEntity | playerHealth pl > 0 && playerHealth newPlayer <= 0]
-            newBulletList = [newBullet | shouldShootNewBullet]
+            newBulletList = [x | shouldShootNewBullet, x <- maybeToList newBullet]
 
-            playerDamageEntity = LevelEntity (EffectEntity PlayerDamage 0.15 0) (x, y) (0, 0) (0, 0)
+            playerDamageEntity = LevelEntity (EffectEntity RedBulletImpact 0.15 0) (x, y) (0, 0) (0, 0)
             playerDeathEntity = LevelEntity (EffectEntity PlayerDeath 0.7 0) (x, y) (0, 0) (0, 0)
 
-            newBullet = LevelEntity (Bullet selectedWeapon (x, y) (x, y) bulletTravelDist) (x, y) (0, 0) (dx * speed, dy * speed)
-            (totalDistX, totalDistY) = (mx - x, my - y)
-            f = sqrt (totalDistX ** 2 + totalDistY ** 2)
-            (dx, dy) = (totalDistX / f, totalDistY / f)
-            speed = weaponTravelSpeed selectedWeapon
+            newBullet = shootBulletToPosition colliders selectedWeapon (x, y) (pointer $ input w) False
 
-            bulletTravelDist :: Float
-            bulletTravelDist = foldr f infinite colliders
+            newEnemyBulletList = mapMaybe f $ filter ((== ShootingState) . enemyState) updatedEnemies
               where
-                infinite = 1e9 -- Close enough
-                bulletLine = ((x, y), (x + dx * infinite, y + dy * infinite))
-
-                f collider closest = case lineIntersectsObject bulletLine collider of
-                  Nothing -> closest
-                  Just hitPos -> min closest $ euclideanDistance (x, y) hitPos
+                f :: EnemyInstance -> Maybe LevelEntity
+                f e = shootBulletToPosition colliders EnemyWeapon (center e) (x, y) True
 
         entityInsideLevel :: LevelEntity -> Bool
         entityInsideLevel LevelEntity {entityPosition = (x, y)} =
@@ -188,8 +202,10 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
         updateEntity entity@(LevelEntity b@Bullet {bulletType = t} pos@(x, y) size (vx, vy))
           -- If the bullet hits a wall, replace it with an Explosion entity.
           | bulletHitsWall newBullet = Just $ createExplosionAtTravelDist t newBullet
-          -- If the bullet hits an enemy, replace it with an Explosion entity.
+          -- If the bullet hits an enemy, replace it with a hit marker.
           | Just hitPos <- bulletHitsEnemy = Just $ createExplosion t hitPos
+          -- If the bullet hits us, just delete the bullet.
+          | Just hitPos <- bulletHitsPlayer = Nothing
           -- If the bullet hits nothing then return a new bullet (which has a new position).
           | otherwise = Just newBullet
           where
@@ -197,9 +213,14 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
             newBullet = entity {entityPosition = newPos, entityType = b {bulletPrevPosition = pos}}
 
             bulletHitsEnemy :: Maybe Vec2
-            bulletHitsEnemy = safeHead $ mapMaybe (lineIntersectsObject line) (levelEnemies lvlInst)
-              where
-                line = (pos, newPos)
+            bulletHitsEnemy
+              | t == EnemyWeapon = Nothing
+              | otherwise = safeHead $ mapMaybe (lineIntersectsObject (pos, newPos)) (levelEnemies lvlInst)
+
+            bulletHitsPlayer :: Maybe Vec2
+            bulletHitsPlayer
+              | t /= EnemyWeapon = Nothing
+              | otherwise = lineIntersectsObject (pos, newPos) pl
         -- Default, do nothing.
         updateEntity x = Just x
 
@@ -208,7 +229,8 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
           where
             explosion
               | wpn == RocketLauncher = EffectEntity DamageExplosion 0.3 0
-              | otherwise = EffectEntity BulletImpact 0.15 0
+              | wpn == EnemyWeapon = EffectEntity RedBulletImpact 0.15 0
+              | otherwise = EffectEntity GreenBulletImpact 0.15 0
 
         createExplosionAtTravelDist :: WeaponType -> LevelEntity -> LevelEntity
         createExplosionAtTravelDist wpn (LevelEntity (Bullet _ (ox, oy) _ travelDist) (x, y) size (vx, vy)) =
@@ -231,13 +253,14 @@ updateScene lvls d' w@(World s@(Gameplay gp) _)
           | otherwise = levelTimeSinceLastSpawnerTick lvlInst + d
 
         updatedEnemies :: [EnemyInstance]
-        updatedEnemies = map (updateEnemy d lvlInst) (levelEnemies lvlInst) ++ spawnedEnemies
+        updatedEnemies = evalRand (mapM (updateEnemy d lvlInst) (levelEnemies lvlInst)) randGen ++ spawnedEnemies
           where
+            randGen = mkStdGen $ floor pt
             spawners = filter ((==) EnemySpawnerObject . objectType) lvlObjs
 
             spawnedEnemies :: [EnemyInstance]
             spawnedEnemies
-              | shouldSpawnEnemies = catMaybes $ evalRand (mapM spawnMaybe spawners) (mkStdGen $ floor pt)
+              | shouldSpawnEnemies = catMaybes $ evalRand (mapM spawnEnemyMaybe spawners) randGen
               | otherwise = []
 
         enemyDeathExplosions :: [LevelEntity]

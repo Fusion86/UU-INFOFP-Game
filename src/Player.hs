@@ -3,11 +3,12 @@ module Player where
 import Collision
 import Coordinates
 import Data.List (find)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Graphics.Gloss.Interface.IO.Game
 import Input
 import Levels
 import Model
+import Weapons
 
 updatePlayer :: Float -> World -> GameplayScene -> Player
 updatePlayer d w s
@@ -34,7 +35,7 @@ updatePlayer d w s
 
     newHp
       | touchesInstaDeath = 0
-      | otherwise = playerHealth pl - (enemiesDamage + environmentalDamage) * d
+      | otherwise = playerHealth pl - (enemiesDamage + environmentalDamage + explosionDamage + explosionDamage) * d - bulletDmg
       where
         touchesInstaDeath = any (\o -> objectType o == DeathObject && intersects pl o) lvlObjs
 
@@ -43,6 +44,18 @@ updatePlayer d w s
 
         environmentalDamage = sum $ map environmentDamage environmentalDamageIntersecting
         environmentalDamageIntersecting = filter (\o -> objectType o == DamageObject && intersects pl o) lvlObjs
+
+        explosionDamage = sum $ map fst (explosionsHit lvlEntities pl)
+
+        bulletDmg
+          | Just bullet <- hitByBullet = weaponDamage' bullet
+          | otherwise = 0
+        hitByBullet = find ((isJust . (`lineIntersectsObject` pl)) . getBulletHitboxRay d) bullets
+        bullets = filter isBullet lvlEntities
+          where
+            -- Shitty filter
+            isBullet (LevelEntity Bullet {} _ _ _) = True
+            isBullet _ = False
 
     selectedWeapon
       | isKeyDown i (Char '1') = AssaultRifle

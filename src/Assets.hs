@@ -72,9 +72,11 @@ loadFxSheet f = do
       return $
         FxSheet
           playerBullets
-          playerBulletImpact
-          playerDamageImpact
+          greenBulletImpact
+          redBulletImpact
+          blueBulletImpact
           playerDeath
+          enemyBullet
           smallExplosions
           explosions
           fireball
@@ -84,9 +86,11 @@ loadFxSheet f = do
         f x y w h = fromImageRGBA8 $ crop x y w h img
 
         playerBullets = [f 2 2 6 6, f 12 2 6 6, f 23 3 4 4]
-        playerBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
-        playerDamageImpact = map (\x -> f x 35 12 12) [15, 29 .. 29]
+        greenBulletImpact = map (\x -> f x 11 12 12) [1, 15 .. 29]
+        redBulletImpact = map (\x -> f x 35 12 12) [15, 29 .. 29]
+        blueBulletImpact = map (\x -> f x 11 12 12) [43, 57 .. 71]
         playerDeath = map (\x -> f x 237 48 48) [1, 51 .. 301]
+        enemyBullet = f 11 25 8 8
         smallExplosions = map (\x -> f x 49 16 16) [1, 19 .. 127]
         explosions = map (\x -> f x 91 30 30) [1, 33 .. 225]
         fireball = map (\x -> f x 389 22 22) [1, 25 .. 361]
@@ -102,6 +106,8 @@ loadEnemyCharacterSheet f = do
           crabIdle
           crabWalkLeft
           crabWalkRight
+          sunIdle
+          sunShooting
       where
         img = convertRGBA8 dynImg
         f :: Int -> Int -> Int -> Int -> Picture
@@ -110,6 +116,8 @@ loadEnemyCharacterSheet f = do
         crabIdle = f 1 31 16 14
         crabWalkLeft = map (\x -> f x 31 16 14) [19, 37 .. 55]
         crabWalkRight = map (\x -> f x 31 16 14) [73, 91 .. 109]
+        sunIdle = map (\x -> f x 87 16 16) [1, 19 .. 73]
+        sunShooting = f 91 87 16 16
 
 getImageAsset :: Assets -> String -> Picture
 getImageAsset a s = case lookup s (images a) of

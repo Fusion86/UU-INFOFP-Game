@@ -107,6 +107,7 @@ loadLevelFromXml xml
             parseLevelObjectProperty :: String -> Maybe LevelObjectProperty
             parseLevelObjectProperty "SpawnChance" = Just SpawnChance
             parseLevelObjectProperty "NextLevel" = Just NextLevel
+            parseLevelObjectProperty "Type" = Just TypeProperty
             parseLevelObjectProperty _ = Nothing
 
     levelName :: Maybe String
